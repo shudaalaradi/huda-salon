@@ -370,6 +370,10 @@ const T = {
     noMsg:'لا توجد رسائل', writeMsg:'اكتبي رسالتك…',
     msgOwner:'مراسلة الإدارة', unread:'غير مقروء',
     editSalary:'تعديل الراتب', adjustments:'الخصومات والمكافآت',
+    edit:'تعديل', del:'حذف', editClient:'تعديل بيانات العميلة',
+    delQ:'تأكيد حذف هذه العميلة؟', deleted:'تم الحذف',
+    hidQ:'لهذه العميلة زيارات سابقة. سيتم إخفاؤها مع الاحتفاظ بسجلها. متابعة؟',
+    hidden:'تم إخفاء العميلة',
     noAdj:'لا توجد خصومات أو مكافآت', deleteQ:'حذف؟',
   },
   en:{
@@ -425,6 +429,10 @@ const T = {
     noMsg:'No messages', writeMsg:'Write a message…',
     msgOwner:'Message management', unread:'unread',
     editSalary:'Edit salary', adjustments:'Deductions & bonuses',
+    edit:'Edit', del:'Delete', editClient:'Edit client',
+    delQ:'Delete this client?', deleted:'Deleted',
+    hidQ:'This client has past visits. She will be hidden but her history kept. Continue?',
+    hidden:'Client hidden',
     noAdj:'No deductions or bonuses', deleteQ:'Delete?',
   }
 };
@@ -933,13 +941,18 @@ async function vClients(q=''){
   });
 }
 
-function clientForm(){
+function clientForm(c){
+  const ed = !!c;
   const o = sheet(`
-    <h3>${t('newClient')}</h3>
-    <div class="field"><label>${t('name')} *</label><input id="nN"></div>
-    <div class="field"><label>${t('phone')}</label><input id="nP" inputmode="tel"></div>
-    <div class="field"><label>${t('allergies')}</label><input id="nA"></div>
-    <div class="field"><label>${t('notes')}</label><textarea id="nT" rows="2"></textarea></div>
+    <h3>${ed ? t('editClient') : t('newClient')}</h3>
+    <div class="field"><label>${t('name')} *</label>
+      <input id="nN" value="${ed?esc(c.full_name):''}"></div>
+    <div class="field"><label>${t('phone')}</label>
+      <input id="nP" inputmode="tel" value="${ed?esc(c.phone||''):''}"></div>
+    <div class="field"><label>${t('allergies')}</label>
+      <input id="nA" value="${ed?esc(c.allergies||''):''}"></div>
+    <div class="field"><label>${t('notes')}</label>
+      <textarea id="nT" rows="2">${ed?esc(c.notes||''):''}</textarea></div>
     <div class="sheet-actions">
       <button class="btn btn-ghost" id="nX">${t('cancel')}</button>
       <button class="btn" id="nOk">${t('save')}</button>
@@ -949,17 +962,34 @@ function clientForm(){
     const nm=o.querySelector('#nN').value.trim();
     if(!nm){ toast(t('required'),'err'); return; }
     const btn=o.querySelector('#nOk'); btn.disabled=true;
-    const { error } = await sb.from('clients').insert({
-      branch_id:S.me.branch_id, full_name:nm,
+    const body = {
+      full_name:nm,
       phone:o.querySelector('#nP').value.trim()||null,
       allergies:o.querySelector('#nA').value.trim()||null,
       notes:o.querySelector('#nT').value.trim()||null,
-      created_by:S.me.id
-    });
+    };
+    const { error } = ed
+      ? await sb.from('clients').update(body).eq('id',c.id)
+      : await sb.from('clients').insert({...body, branch_id:S.me.branch_id, created_by:S.me.id});
     if(error){ btn.disabled=false; toast(error.message,'err'); return; }
     closeSheet(); toast(t('saved'),'ok');
     S.clients=[]; if(S.tab==='clients') vClients();
   };
+}
+
+async function clientDelete(c, visits){
+  if(visits > 0){
+    if(!confirm(t('hidQ'))) return;
+    const { error } = await sb.from('clients').update({is_active:false}).eq('id',c.id);
+    if(error){ toast(error.message,'err'); return; }
+    closeSheet(); toast(t('hidden'),'ok');
+  } else {
+    if(!confirm(t('delQ'))) return;
+    const { error } = await sb.from('clients').delete().eq('id',c.id);
+    if(error){ toast(error.message,'err'); return; }
+    closeSheet(); toast(t('deleted'),'ok');
+  }
+  S.clients=[]; if(S.tab==='clients') vClients();
 }
 
 async function clientDetail(c){
@@ -968,7 +998,7 @@ async function clientDetail(c){
     .select('start_at,status, appointment_services(services(name_ar,name_en))')
     .eq('client_id',c.id).order('start_at',{ascending:false}).limit(20);
 
-  sheet(`
+  const sh = sheet(`
     <h3>${esc(c.full_name)}</h3>
     <div class="card" style="margin-bottom:14px">
       <div class="pay-row"><span class="lb">${t('phone')}</span>
@@ -986,8 +1016,16 @@ async function clientDetail(c){
         <div class="meta">${(a.appointment_services||[]).map(x=>esc(nameOf(x.services||{}))).join(' + ')}</div>
       </div><span class="chip" style="background:var(--mint)">${t(a.status)}</span></div>`).join('')}</div>`
     : `<div class="empty">${t('noAppt')}</div>`}
-    <button class="btn-sm btn-ghost btn-full" style="margin-top:14px"
+    ${S.me.role!=='staff'?`
+      <div style="display:flex;gap:9px;margin-top:16px">
+        <button class="btn btn-ghost" style="flex:1" id="cEd">${t('edit')}</button>
+        <button class="btn btn-danger" style="flex:1" id="cDel">${t('del')}</button>
+      </div>`:''}
+    <button class="btn-sm btn-ghost btn-full" style="margin-top:10px"
       onclick="closeSheet()">${t('close')}</button>`);
+
+  if(sh.querySelector('#cEd'))  sh.querySelector('#cEd').onclick  = () => { closeSheet(); clientForm(c); };
+  if(sh.querySelector('#cDel')) sh.querySelector('#cDel').onclick = () => clientDelete(c, (ap||[]).length);
 }
 
 /* ══════════════════════════════════════════════════════════
