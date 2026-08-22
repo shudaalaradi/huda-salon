@@ -200,6 +200,67 @@ nav button.on{color:var(--navy)}
 }
 @keyframes sp{to{transform:rotate(360deg)}}
 [dir=ltr] .appt,[dir=ltr] .cal .slot{border-inline-start:1px solid var(--line)}
+
+/* ==========  إضافات وحدة الموظفات  ========== */
+.banner{
+  background:var(--navy);color:#fff;border-radius:var(--radius);
+  padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow);
+}
+.banner .bt{font-weight:700;margin-bottom:4px;font-size:14px}
+.banner .bb{font-size:13.5px;opacity:.85;line-height:1.5;white-space:pre-wrap}
+
+.menu-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px}
+.menu-card{
+  background:#fff;border-radius:var(--radius);padding:20px 16px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
+  font-weight:600;position:relative;
+}
+.menu-card svg{width:26px;height:26px;stroke:var(--navy);fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+.badge{
+  position:absolute;top:10px;inset-inline-end:10px;background:var(--danger);color:#fff;
+  min-width:21px;height:21px;border-radius:99px;font-size:11.5px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;padding:0 6px;
+}
+
+/* الرسائل */
+.chat{display:flex;flex-direction:column;gap:9px;padding-bottom:8px}
+.bub{max-width:80%;padding:10px 13px;border-radius:16px;font-size:14px;line-height:1.5;
+  white-space:pre-wrap;word-break:break-word}
+.bub .tm{font-size:10.5px;opacity:.55;margin-top:4px}
+.bub.me{align-self:flex-end;background:var(--navy);color:#fff;border-end-end-radius:5px}
+.bub.you{align-self:flex-start;background:#fff;box-shadow:var(--shadow);border-end-start-radius:5px}
+.composer{
+  position:sticky;bottom:0;background:var(--cream);padding:10px 0 4px;
+  display:flex;gap:8px;align-items:flex-end;
+}
+.composer textarea{
+  flex:1;padding:11px 13px;border:1.5px solid var(--line);border-radius:16px;
+  background:#fff;outline:none;resize:none;max-height:110px;
+}
+.composer button{
+  background:var(--navy);color:#fff;width:44px;height:44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;
+}
+
+/* الراتب */
+.pay-row{display:flex;justify-content:space-between;padding:9px 0;
+  border-bottom:1px solid var(--line);font-size:14px}
+.pay-row:last-child{border-bottom:none}
+.pay-row .lb{color:var(--muted)}
+.pay-row.neg b{color:var(--danger)}
+.pay-row.pos b{color:var(--ok)}
+.pay-net{
+  background:var(--navy);color:#fff;border-radius:var(--radius);padding:18px;
+  display:flex;justify-content:space-between;align-items:center;margin-top:12px;
+}
+.pay-net b{font-size:26px;font-variant-numeric:tabular-nums}
+
+/* الحالات */
+.st-pending{background:#FFF2D8;color:#8A6510}
+.st-approved{background:var(--mint);color:#2C5138}
+.st-rejected{background:#F7E9E8;color:var(--danger)}
+
 </style>
 </head>
 <body>
@@ -260,12 +321,13 @@ const T = {
     salon:'صالون هدى العرادي', signin:'سجّلي الدخول للمتابعة',
     email:'البريد الإلكتروني', pass:'كلمة السر', login:'دخول', logout:'خروج',
     owner:'مديرة', receptionist:'استقبال', staff:'موظفة',
-    nDash:'الرئيسية', nCal:'المواعيد', nClients:'العميلات', nAtt:'الدوام', nMore:'المزيد',
+    nDash:'الرئيسية', nCal:'المواعيد', nMyCal:'مواعيدي', nClients:'العميلات',
+    nAtt:'الدوام', nMore:'المزيد', nPay:'راتبي', nReq:'طلباتي', nMsg:'رسائل',
     today:'اليوم', revToday:'إيرادات اليوم', apptToday:'مواعيد اليوم',
     doneToday:'خدمات منتهية', clientsTotal:'إجمالي العميلات',
     newAppt:'موعد جديد', client:'العميلة', service:'الخدمة', staffM:'الموظفة',
     date:'التاريخ', time:'الوقت', notes:'ملاحظات', save:'حفظ', cancel:'إلغاء',
-    pick:'— اختاري —', search:'بحث…',
+    close:'إغلاق', pick:'— اختاري —', search:'بحث…', send:'إرسال',
     newClient:'عميلة جديدة', name:'الاسم', phone:'الجوال',
     allergies:'حساسية / تنبيهات', visits:'زيارة',
     status:'الحالة', booked:'محجوز', confirmed:'مؤكد', in_progress:'جارية',
@@ -277,23 +339,50 @@ const T = {
     checkIn:'تسجيل حضور', startBreak:'بدء البريك', endBreak:'إنهاء البريك',
     checkOut:'تسجيل انصراف', notIn:'لم تسجلي الحضور بعد', working:'في الدوام',
     onBreak:'في البريك', doneDay:'انتهى دوامك اليوم',
-    since:'منذ', workedToday:'ساعات اليوم', breakToday:'دقائق البريك',
+    workedToday:'ساعات اليوم', breakToday:'دقائق البريك',
     services:'الخدمات', team:'الفريق', min:'دقيقة', kwd:'د.ك',
     noAppt:'لا توجد مواعيد', noClients:'لا توجد عميلات',
     saved:'تم الحفظ', clash:'الموظفة محجوزة بهذا الوقت',
     errLogin:'بيانات الدخول غير صحيحة', required:'أكملي الحقول المطلوبة',
-    attToday:'حضور اليوم', staffOnly:'خاص بالموظفات',
+    attToday:'حضور اليوم',
+    /* ــ الجديد ــ */
+    requests:'الطلبات', payroll:'الرواتب', msgs:'الرسائل', ann:'الإعلانات',
+    permission:'استئذان', leave:'إجازة', newPerm:'طلب استئذان', newLeave:'طلب إجازة',
+    from:'من', to:'إلى', reason:'السبب', pending:'قيد الانتظار',
+    approved:'معتمد', rejected:'مرفوض', approve:'اعتماد', reject:'رفض',
+    approvePaid:'اعتماد مدفوعة', approveUnpaid:'اعتماد بخصم',
+    leaveType:'نوع الإجازة', annual:'سنوية', sick:'مرضية',
+    unpaid:'بدون راتب', absence:'غياب',
+    noReq:'لا توجد طلبات', myReq:'طلباتي', pendingReq:'طلبات بانتظارك',
+    baseSalary:'الراتب الأساسي', daysPresent:'أيام الحضور',
+    lateMin:'دقائق التأخير', lateDeduct:'خصم التأخير',
+    absDays:'أيام الغياب', absDeduct:'خصم الغياب',
+    otherDeduct:'خصومات أخرى', bonus:'مكافأة', net:'الصافي',
+    month:'الشهر', salarySettings:'إعدادات الراتب',
+    workDays:'أيام العمل بالشهر', dailyHours:'ساعات الدوام',
+    shiftStart:'بداية الدوام', grace:'سماح التأخير (دقيقة)',
+    deductLate:'خصم التأخير من الراتب', yes:'نعم', no:'لا',
+    addAdj:'إضافة خصم أو مكافأة', kind:'النوع', amount:'المبلغ',
+    deduction:'خصم', noSalary:'لم تُحدد بيانات راتبك بعد',
+    lateDays:'أيام التأخير', noLate:'لا يوجد تأخير هذا الشهر',
+    newAnn:'إعلان جديد', annTitle:'العنوان', annBody:'نص الإعلان',
+    activate:'تفعيل', deactivate:'إيقاف', active:'مفعّل',
+    noMsg:'لا توجد رسائل', writeMsg:'اكتبي رسالتك…',
+    msgOwner:'مراسلة الإدارة', unread:'غير مقروء',
+    editSalary:'تعديل الراتب', adjustments:'الخصومات والمكافآت',
+    noAdj:'لا توجد خصومات أو مكافآت', deleteQ:'حذف؟',
   },
   en:{
     salon:'Huda Alaradi Salon', signin:'Sign in to continue',
     email:'Email', pass:'Password', login:'Sign in', logout:'Sign out',
     owner:'Owner', receptionist:'Reception', staff:'Staff',
-    nDash:'Home', nCal:'Calendar', nClients:'Clients', nAtt:'Shift', nMore:'More',
+    nDash:'Home', nCal:'Calendar', nMyCal:'My day', nClients:'Clients',
+    nAtt:'Shift', nMore:'More', nPay:'My pay', nReq:'Requests', nMsg:'Messages',
     today:'Today', revToday:"Today's revenue", apptToday:"Today's bookings",
     doneToday:'Completed', clientsTotal:'Total clients',
     newAppt:'New booking', client:'Client', service:'Service', staffM:'Staff',
     date:'Date', time:'Time', notes:'Notes', save:'Save', cancel:'Cancel',
-    pick:'— select —', search:'Search…',
+    close:'Close', pick:'— select —', search:'Search…', send:'Send',
     newClient:'New client', name:'Name', phone:'Phone',
     allergies:'Allergies / alerts', visits:'visits',
     status:'Status', booked:'Booked', confirmed:'Confirmed', in_progress:'In progress',
@@ -305,12 +394,38 @@ const T = {
     checkIn:'Check in', startBreak:'Start break', endBreak:'End break',
     checkOut:'Check out', notIn:'Not checked in yet', working:'On shift',
     onBreak:'On break', doneDay:'Shift finished',
-    since:'since', workedToday:'Hours today', breakToday:'Break minutes',
+    workedToday:'Hours today', breakToday:'Break minutes',
     services:'Services', team:'Team', min:'min', kwd:'KWD',
     noAppt:'No bookings', noClients:'No clients',
     saved:'Saved', clash:'That staff member is already booked',
     errLogin:'Wrong email or password', required:'Please fill required fields',
-    attToday:'Attendance today', staffOnly:'Staff only',
+    attToday:'Attendance today',
+    requests:'Requests', payroll:'Payroll', msgs:'Messages', ann:'Announcements',
+    permission:'Permission', leave:'Leave', newPerm:'Request permission',
+    newLeave:'Request leave',
+    from:'From', to:'To', reason:'Reason', pending:'Pending',
+    approved:'Approved', rejected:'Rejected', approve:'Approve', reject:'Reject',
+    approvePaid:'Approve (paid)', approveUnpaid:'Approve (deduct)',
+    leaveType:'Leave type', annual:'Annual', sick:'Sick',
+    unpaid:'Unpaid', absence:'Absence',
+    noReq:'No requests', myReq:'My requests', pendingReq:'Awaiting you',
+    baseSalary:'Base salary', daysPresent:'Days present',
+    lateMin:'Late minutes', lateDeduct:'Late deduction',
+    absDays:'Absence days', absDeduct:'Absence deduction',
+    otherDeduct:'Other deductions', bonus:'Bonus', net:'Net',
+    month:'Month', salarySettings:'Salary settings',
+    workDays:'Work days / month', dailyHours:'Daily hours',
+    shiftStart:'Shift start', grace:'Grace period (min)',
+    deductLate:'Deduct lateness', yes:'Yes', no:'No',
+    addAdj:'Add deduction or bonus', kind:'Type', amount:'Amount',
+    deduction:'Deduction', noSalary:'Your salary is not set yet',
+    lateDays:'Late days', noLate:'No lateness this month',
+    newAnn:'New announcement', annTitle:'Title', annBody:'Message',
+    activate:'Activate', deactivate:'Deactivate', active:'Active',
+    noMsg:'No messages', writeMsg:'Write a message…',
+    msgOwner:'Message management', unread:'unread',
+    editSalary:'Edit salary', adjustments:'Deductions & bonuses',
+    noAdj:'No deductions or bonuses', deleteQ:'Delete?',
   }
 };
 
@@ -320,7 +435,6 @@ const T = {
 let lang = 'ar';
 const t = k => T[lang][k] || k;
 
-// تخزين يعمل حتى لو localStorage معطّل
 const mem = {};
 const store = {
   getItem:k=>{ try{return localStorage.getItem(k)}catch(e){return mem[k]??null} },
@@ -332,17 +446,20 @@ const sb = supabase.createClient(CFG.url, CFG.key, {
   auth:{ storage:store, persistSession:true, autoRefreshToken:true }
 });
 
-const S = { me:null, staff:[], services:[], clients:[], tab:'', day:todayISO() };
+const S = { me:null, staff:[], services:[], clients:[], tab:'', day:todayISO(),
+            ym:todayISO().slice(0,7), thread:null, ann:null, counts:{} };
 
 function todayISO(){
   const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
   return d.toISOString().slice(0,10);
 }
 const money  = f => (f/1000).toFixed(3);
-const nameOf = o => (lang==='ar' ? (o.name_ar||o.full_name_ar) : (o.name_en||o.full_name_en)) 
+const nameOf = o => (lang==='ar' ? (o.name_ar||o.full_name_ar) : (o.name_en||o.full_name_en))
                  || o.name_ar || o.full_name_ar || '';
 const hhmm   = iso => new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+const hm     = s => (s||'').slice(0,5);
 const esc    = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const stChip = s => `<span class="chip st-${s}">${t(s)}</span>`;
 
 function toast(msg,kind){
   document.querySelectorAll('.toast').forEach(e=>e.remove());
@@ -411,15 +528,39 @@ async function boot(){
   $('#hName').textContent = nameOf(me);
   $('#hRole').textContent = t(me.role);
 
-  const [st,sv] = await Promise.all([
+  const [st,sv,an] = await Promise.all([
     sb.from('profiles').select('*').eq('role','staff').eq('is_active',true).order('full_name_ar'),
     sb.from('services').select('*, service_categories(name_ar,name_en)').eq('is_active',true).order('name_ar'),
+    sb.from('announcements').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(1),
   ]);
   S.staff    = st.data || [];
   S.services = sv.data || [];
+  S.ann      = (an.data||[])[0] || null;
 
-  S.tab = me.role==='owner' ? 'dash' : (me.role==='staff' ? 'cal' : 'cal');
+  await refreshCounts();
+
+  S.tab = me.role==='owner' ? 'dash' : (me.role==='staff' ? 'att' : 'cal');
   buildNav(); render();
+}
+
+async function refreshCounts(){
+  S.counts = { req:0, msg:0 };
+  try{
+    if(S.me.role==='owner'){
+      const [p,l,m] = await Promise.all([
+        sb.from('permissions').select('id',{count:'exact',head:true}).eq('status','pending'),
+        sb.from('leaves').select('id',{count:'exact',head:true}).eq('status','pending'),
+        sb.from('messages').select('id',{count:'exact',head:true})
+          .eq('read_by_owner',false).neq('sender_id',S.me.id),
+      ]);
+      S.counts.req = (p.count||0)+(l.count||0);
+      S.counts.msg = m.count||0;
+    } else if(S.me.role==='staff'){
+      const m = await sb.from('messages').select('id',{count:'exact',head:true})
+        .eq('staff_id',S.me.id).eq('read_by_staff',false).neq('sender_id',S.me.id);
+      S.counts.msg = m.count||0;
+    }
+  }catch(e){}
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -430,30 +571,55 @@ const ICON = {
   cal :'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   cli :'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
   att :'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  pay :'<rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/>',
+  req :'<path d="M9 4h6a2 2 0 012 2v14l-5-3-5 3V6a2 2 0 012-2z"/>',
+  msg :'<path d="M21 12a8 8 0 01-11.5 7.2L3 21l1.8-6.5A8 8 0 1121 12z"/>',
   more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  ann :'<path d="M3 11v2a1 1 0 001 1h2l5 4V6L6 10H4a1 1 0 00-1 1z"/><path d="M16 9a4 4 0 010 6"/>',
+  srv :'<path d="M4 7h16M4 12h16M4 17h10"/>',
 };
 function buildNav(){
   const r = S.me.role;
   let tabs = [];
-  if(r==='owner')            tabs=[['dash','nDash','dash'],['cal','nCal','cal'],['clients','nClients','cli'],['att','nAtt','att'],['more','nMore','more']];
-  else if(r==='receptionist')tabs=[['cal','nCal','cal'],['clients','nClients','cli'],['att','nAtt','att']];
-  else                       tabs=[['cal','nCal','cal'],['att','nAtt','att']];
+  if(r==='owner')
+    tabs=[['dash','nDash','dash'],['cal','nCal','cal'],['clients','nClients','cli'],
+          ['att','nAtt','att'],['more','nMore','more',S.counts.req+S.counts.msg]];
+  else if(r==='receptionist')
+    tabs=[['cal','nCal','cal'],['clients','nClients','cli'],['att','nAtt','att']];
+  else
+    tabs=[['att','nAtt','att'],['cal','nMyCal','cal'],['pay','nPay','pay'],
+          ['req','nReq','req'],['msg','nMsg','msg',S.counts.msg]];
 
-  $('#nav').innerHTML = tabs.map(([id,lbl,ic])=>`
-    <button data-tab="${id}" class="${S.tab===id?'on':''}">
+  const grp = { requests:'more', payroll:'more', msgs:'more', ann:'more',
+                services:'more', team:'more', thread:'more' };
+  const cur = grp[S.tab] || S.tab;
+
+  $('#nav').innerHTML = tabs.map(([id,lbl,ic,n])=>`
+    <button data-tab="${id}" class="${cur===id?'on':''}" style="position:relative">
+      ${n?`<span class="badge" style="top:2px;inset-inline-end:14px">${n}</span>`:''}
       <svg viewBox="0 0 24 24">${ICON[ic]}</svg>${t(lbl)}
     </button>`).join('');
   $('#nav').querySelectorAll('button').forEach(b=>{
     b.onclick=()=>{ S.tab=b.dataset.tab; buildNav(); render(); window.scrollTo(0,0); };
   });
 }
+function go(tab){ S.tab=tab; buildNav(); render(); window.scrollTo(0,0); }
 
 /* ══════════════════════════════════════════════════════════
    ٨ ــ الموجّه
    ══════════════════════════════════════════════════════════ */
 function render(){
   const v=$('#view'); v.innerHTML='<div class="spin"></div>';
-  ({ dash:vDash, cal:vCal, clients:vClients, att:vAtt, more:vMore }[S.tab] || vCal)();
+  ({ dash:vDash, cal:vCal, clients:vClients, att:vAtt, more:vMore,
+     pay:vPay, req:vReq, msg:vMsg,
+     requests:vRequests, payroll:vPayroll, msgs:vThreads, ann:vAnn,
+     services:vServices, team:vTeam, thread:vThread }[S.tab] || vCal)();
+}
+function backBar(title, to){
+  return `<div class="row-between">
+    <div class="page-title" style="margin:0">${title}</div>
+    <button class="btn-sm btn-ghost" onclick="go('${to}')">${lang==='ar'?'رجوع ›':'‹ Back'}</button>
+  </div>`;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -473,14 +639,18 @@ async function vDash(){
 
   $('#view').innerHTML = `
     <div class="page-title">${t('today')} — ${S.day}</div>
+    ${S.counts.req?`<div class="banner" style="background:var(--danger);cursor:pointer" onclick="go('requests')">
+      <div class="bt">${t('pendingReq')}: ${S.counts.req}</div>
+      <div class="bb">${lang==='ar'?'اضغطي للمراجعة':'Tap to review'}</div></div>`:''}
+    ${S.counts.msg?`<div class="banner" style="cursor:pointer" onclick="go('msgs')">
+      <div class="bt">${t('msgs')}: ${S.counts.msg} ${t('unread')}</div></div>`:''}
     <div class="stats">
       <div class="stat hi"><div class="lbl">${t('revToday')}</div><div class="val">${money(rev)}</div></div>
       <div class="stat"><div class="lbl">${t('apptToday')}</div><div class="val">${appts.length}</div></div>
       <div class="stat"><div class="lbl">${t('doneToday')}</div><div class="val">${done}</div></div>
       <div class="stat"><div class="lbl">${t('clientsTotal')}</div><div class="val">${cl.count||0}</div></div>
     </div>
-    <button class="btn btn-full" id="go">${t('nCal')} ←</button>`;
-  $('#go').onclick=()=>{ S.tab='cal'; buildNav(); render(); };
+    <button class="btn btn-full" onclick="go('cal')">${t('nCal')} ←</button>`;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -491,7 +661,7 @@ async function vCal(){
   const cols = isStaff ? S.staff.filter(s=>s.id===S.me.id) : S.staff;
 
   let q = sb.from('appointments')
-    .select('*, appointment_services(price_fils, services(name_ar,name_en))')
+    .select('*, appointment_services(service_id, price_fils, services(name_ar,name_en))')
     .gte('start_at', S.day+'T00:00:00').lte('start_at', S.day+'T23:59:59')
     .order('start_at');
   if(isStaff) q = q.eq('staff_id', S.me.id);
@@ -504,7 +674,7 @@ async function vCal(){
     (cs||[]).forEach(c=>cmap[c.id]=c);
   }
 
-  const slots=[]; 
+  const slots=[];
   for(let m=CFG.openHour*60; m<CFG.closeHour*60; m+=CFG.slotMin) slots.push(m);
 
   const at = {};
@@ -518,7 +688,7 @@ async function vCal(){
 
   $('#view').innerHTML = `
     <div class="row-between">
-      <div class="page-title" style="margin:0">${t('nCal')}</div>
+      <div class="page-title" style="margin:0">${isStaff?t('nMyCal'):t('nCal')}</div>
       ${canBook?`<button class="btn btn-sm" id="add">+ ${t('newAppt')}</button>`:''}
     </div>
     <div class="datebar">
@@ -585,7 +755,7 @@ async function apptForm(pre={}){
     <button class="btn-sm btn-ghost" id="fNew" style="margin-bottom:14px">+ ${t('newClient')}</button>
     <div class="field"><label>${t('service')} *</label>
       <select id="fSv"><option value="">${t('pick')}</option>
-        ${S.services.map(s=>`<option value="${s.id}" data-d="${s.duration_minutes}">${esc(nameOf(s))} · ${s.duration_minutes}${t('min')} · ${money(s.price_fils)}</option>`).join('')}
+        ${S.services.map(s=>`<option value="${s.id}">${esc(nameOf(s))} · ${s.duration_minutes}${t('min')} · ${money(s.price_fils)}</option>`).join('')}
       </select></div>
     <div class="field"><label>${t('staffM')} *</label>
       <select id="fSt"><option value="">${t('pick')}</option>
@@ -604,10 +774,10 @@ async function apptForm(pre={}){
 
   o.querySelector('#fOk').onclick = async () => {
     const cl=o.querySelector('#fCl').value, st=o.querySelector('#fSt').value;
-    const so=o.querySelector('#fSv').selectedOptions[0];
-    if(!cl||!st||!so.value){ toast(t('required'),'err'); return; }
+    const svId=o.querySelector('#fSv').value;
+    if(!cl||!st||!svId){ toast(t('required'),'err'); return; }
 
-    const svc = S.services.find(x=>x.id===so.value);
+    const svc = S.services.find(x=>x.id===svId);
     const start = new Date(`${o.querySelector('#fD').value}T${o.querySelector('#fT').value}:00`);
     const end   = new Date(start.getTime() + (svc.duration_minutes+svc.buffer_minutes)*60000);
 
@@ -647,19 +817,14 @@ function apptDetail(a, cmap){
   const o = sheet(`
     <h3>${esc(c.full_name||'')}</h3>
     <div class="card" style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <span style="color:var(--muted)">${t('time')}</span>
+      <div class="pay-row"><span class="lb">${t('time')}</span>
         <b>${hhmm(a.start_at)} – ${hhmm(a.end_at)}</b></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <span style="color:var(--muted)">${t('staffM')}</span><b>${esc(nameOf(st))}</b></div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <span style="color:var(--muted)">${t('service')}</span>
+      <div class="pay-row"><span class="lb">${t('staffM')}</span><b>${esc(nameOf(st))}</b></div>
+      <div class="pay-row"><span class="lb">${t('service')}</span>
         <b>${items.map(i=>esc(nameOf(i.services||{}))).join(' + ')}</b></div>
-      ${c.phone?`<div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <span style="color:var(--muted)">${t('phone')}</span>
+      ${c.phone?`<div class="pay-row"><span class="lb">${t('phone')}</span>
         <a href="tel:${esc(c.phone)}"><b>${esc(c.phone)}</b></a></div>`:''}
-      <div style="display:flex;justify-content:space-between">
-        <span style="color:var(--muted)">${t('status')}</span><b>${t(a.status)}</b></div>
+      <div class="pay-row"><span class="lb">${t('status')}</span><b>${t(a.status)}</b></div>
       ${a.notes?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);
         font-size:13px;color:var(--muted)">${esc(a.notes)}</div>`:''}
     </div>
@@ -669,7 +834,7 @@ function apptDetail(a, cmap){
       ${front?`<button class="btn btn-full" style="margin-bottom:9px" id="aPay">${t('finish')} · ${money(sum)}</button>`:''}
       <button class="btn btn-ghost btn-full" id="aNo">${t('cancelAppt')}</button>
     `:''}
-    <button class="btn-sm btn-ghost btn-full" style="margin-top:12px" id="aX">${t('cancel')}</button>`);
+    <button class="btn-sm btn-ghost btn-full" style="margin-top:12px" id="aX">${t('close')}</button>`);
 
   o.querySelector('#aX').onclick = closeSheet;
   if(o.querySelector('#aGo')) o.querySelector('#aGo').onclick = async () => {
@@ -690,20 +855,16 @@ function payForm(a,c,items,sum){
   const o = sheet(`
     <h3>${t('invoice')} — ${esc(c.full_name||'')}</h3>
     <div class="card" style="margin-bottom:14px">
-      ${items.map(i=>`<div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span>${esc(nameOf(i.services||{}))}</span><b>${money(i.price_fils)}</b></div>`).join('')}
-      <div style="display:flex;justify-content:space-between;padding-top:9px;
-        border-top:1px solid var(--line);margin-top:6px">
-        <span style="color:var(--muted)">${t('subtotal')}</span><b>${money(sum)}</b></div>
+      ${items.map(i=>`<div class="pay-row"><span>${esc(nameOf(i.services||{}))}</span>
+        <b>${money(i.price_fils)}</b></div>`).join('')}
+      <div class="pay-row"><span class="lb">${t('subtotal')}</span><b>${money(sum)}</b></div>
     </div>
     <div class="field"><label>${t('discount')} (${t('kwd')})</label>
       <input type="number" id="pDis" value="0" step="0.5" min="0" inputmode="decimal"></div>
     <div class="field"><label>${t('payMethod')}</label>
       <select id="pM"><option value="cash">${t('cash')}</option>
         <option value="knet">${t('knet')}</option><option value="visa">${t('visa')}</option></select></div>
-    <div class="card" style="background:var(--navy);color:#fff;display:flex;
-      justify-content:space-between;align-items:center">
-      <span>${t('total')}</span><b style="font-size:22px" id="pT">${money(sum)}</b></div>
+    <div class="pay-net"><span>${t('total')}</span><b id="pT">${money(sum)}</b></div>
     <div class="sheet-actions">
       <button class="btn btn-ghost" id="pX">${t('cancel')}</button>
       <button class="btn btn-2" id="pOk">${t('confirmPay')}</button>
@@ -810,11 +971,9 @@ async function clientDetail(c){
   sheet(`
     <h3>${esc(c.full_name)}</h3>
     <div class="card" style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
-        <span style="color:var(--muted)">${t('phone')}</span>
+      <div class="pay-row"><span class="lb">${t('phone')}</span>
         ${c.phone?`<a href="tel:${esc(c.phone)}"><b>${esc(c.phone)}</b></a>`:'<b>—</b>'}</div>
-      <div style="display:flex;justify-content:space-between">
-        <span style="color:var(--muted)">${t('visits')}</span><b>${(ap||[]).length}</b></div>
+      <div class="pay-row"><span class="lb">${t('visits')}</span><b>${(ap||[]).length}</b></div>
       ${c.allergies?`<div style="margin-top:10px;padding:9px 11px;background:#F7E9E8;
         border-radius:10px;font-size:13px;color:var(--danger)">⚠ ${esc(c.allergies)}</div>`:''}
       ${c.notes?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);
@@ -828,15 +987,21 @@ async function clientDetail(c){
       </div><span class="chip" style="background:var(--mint)">${t(a.status)}</span></div>`).join('')}</div>`
     : `<div class="empty">${t('noAppt')}</div>`}
     <button class="btn-sm btn-ghost btn-full" style="margin-top:14px"
-      onclick="document.querySelectorAll('.overlay').forEach(e=>e.remove())">${t('cancel')}</button>`);
+      onclick="closeSheet()">${t('close')}</button>`);
 }
 
 /* ══════════════════════════════════════════════════════════
    ١٥ ــ الحضور والبريك
    ══════════════════════════════════════════════════════════ */
+function annBanner(){
+  if(!S.ann) return '';
+  return `<div class="banner">
+    ${S.ann.title?`<div class="bt">📢 ${esc(S.ann.title)}</div>`:'<div class="bt">📢</div>'}
+    <div class="bb">${esc(S.ann.body)}</div></div>`;
+}
+
 async function vAtt(){
   if(S.me.role==='staff') return attMe();
-  // المديرة والاستقبال: حضور الجميع + حضورهم
   const { data:rows } = await sb.from('attendance')
     .select('*, attendance_breaks(*)').eq('work_date',S.day);
   const map={}; (rows||[]).forEach(r=>map[r.staff_id]=r);
@@ -879,7 +1044,7 @@ async function attMe(container){
     s + Math.round(((b.break_end?new Date(b.break_end):new Date()) - new Date(b.break_start))/60000), 0);
 
   const html = `
-    ${container?'':`<div class="page-title">${t('nAtt')}</div>`}
+    ${container?'':`${annBanner()}<div class="page-title">${t('nAtt')}</div>`}
     <div class="att-big">
       <div class="state">${state}</div>
       <div class="clock">${String(Math.floor(worked/60)).padStart(2,'0')}:${String(worked%60).padStart(2,'0')}</div>
@@ -896,7 +1061,8 @@ async function attMe(container){
 
   (container || $('#view')).innerHTML = html;
 
-  const btn = (container||document).querySelector('#aBtn');
+  const root = container || document;
+  const btn = root.querySelector('#aBtn');
   if(btn) btn.onclick = async () => {
     btn.disabled=true;
     if(action==='in'){
@@ -910,7 +1076,7 @@ async function attMe(container){
       .update({break_end:new Date().toISOString()}).eq('id',brk.id);
     render();
   };
-  const out = (container||document).querySelector('#aOut');
+  const out = root.querySelector('#aOut');
   if(out) out.onclick = async () => {
     out.disabled=true;
     if(brk) await sb.from('attendance_breaks')
@@ -921,18 +1087,535 @@ async function attMe(container){
 }
 
 /* ══════════════════════════════════════════════════════════
-   ١٦ ــ المزيد (المديرة)
+   ١٦ ــ راتبي (الموظفة)
+   ══════════════════════════════════════════════════════════ */
+async function vPay(){
+  const [{ data:rows }, { data:late }, { data:adj }] = await Promise.all([
+    sb.rpc('payroll',{p_ym:S.ym}),
+    sb.rpc('late_details',{p_ym:S.ym, p_staff:S.me.id}),
+    sb.from('salary_adjustments').select('*').eq('staff_id',S.me.id).eq('ym',S.ym)
+      .order('created_at'),
+  ]);
+  const p = (rows||[])[0];
+
+  $('#view').innerHTML = `
+    <div class="page-title">${t('nPay')}</div>
+    <div class="field"><input type="month" id="pm" value="${S.ym}"></div>
+    ${!p ? `<div class="empty">${t('noSalary')}</div>` : `
+    <div class="card">
+      <div class="pay-row"><span class="lb">${t('baseSalary')}</span><b>${money(p.base_fils)}</b></div>
+      <div class="pay-row"><span class="lb">${t('daysPresent')}</span><b>${p.days_present}</b></div>
+      ${p.late_deduct_fils?`<div class="pay-row neg"><span class="lb">${t('lateDeduct')} (${p.late_minutes} ${t('min')})</span>
+        <b>− ${money(p.late_deduct_fils)}</b></div>`:''}
+      ${p.absence_deduct_fils?`<div class="pay-row neg"><span class="lb">${t('absDeduct')} (${p.absence_days})</span>
+        <b>− ${money(p.absence_deduct_fils)}</b></div>`:''}
+      ${p.manual_deduct_fils?`<div class="pay-row neg"><span class="lb">${t('otherDeduct')}</span>
+        <b>− ${money(p.manual_deduct_fils)}</b></div>`:''}
+      ${p.bonus_fils?`<div class="pay-row pos"><span class="lb">${t('bonus')}</span>
+        <b>+ ${money(p.bonus_fils)}</b></div>`:''}
+    </div>
+    <div class="pay-net"><span>${t('net')}</span><b>${money(p.net_fils)}</b></div>
+
+    ${(adj||[]).length?`
+      <div class="page-title" style="margin:22px 0 10px;font-size:16px">${t('adjustments')}</div>
+      <div class="list">${adj.map(a=>`
+        <div class="item"><div>
+          <div class="nm">${esc(a.reason)}</div>
+          <div class="meta">${a.created_at.slice(0,10)}</div>
+        </div><b style="color:${a.kind==='bonus'?'var(--ok)':'var(--danger)'}">
+          ${a.kind==='bonus'?'+':'−'} ${money(a.amount_fils)}</b></div>`).join('')}</div>`:''}
+
+    <div class="page-title" style="margin:22px 0 10px;font-size:16px">${t('lateDays')}</div>
+    ${(late||[]).length?`<div class="list">${late.map(l=>`
+      <div class="item"><div>
+        <div class="nm">${l.work_date}</div>
+        <div class="meta">${t('checkIn')}: ${hm(l.check_in)}</div>
+      </div><b style="color:var(--danger)">${l.late_minutes} ${t('min')}</b></div>`).join('')}</div>`
+     :`<div class="empty">${t('noLate')}</div>`}
+    `}`;
+
+  $('#pm').onchange = e => { S.ym=e.target.value; render(); };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ١٧ ــ طلباتي (الموظفة)
+   ══════════════════════════════════════════════════════════ */
+async function vReq(){
+  const [{ data:perms }, { data:lvs }] = await Promise.all([
+    sb.from('permissions').select('*').eq('staff_id',S.me.id)
+      .order('created_at',{ascending:false}).limit(40),
+    sb.from('leaves').select('*').eq('staff_id',S.me.id)
+      .order('created_at',{ascending:false}).limit(40),
+  ]);
+  const all = [
+    ...(perms||[]).map(x=>({...x,_k:'perm'})),
+    ...(lvs||[]).map(x=>({...x,_k:'leave'})),
+  ].sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+
+  $('#view').innerHTML = `
+    <div class="page-title">${t('myReq')}</div>
+    <div style="display:flex;gap:9px;margin-bottom:16px">
+      <button class="btn btn-sm" style="flex:1" id="rP">+ ${t('permission')}</button>
+      <button class="btn btn-sm btn-2" style="flex:1" id="rL">+ ${t('leave')}</button>
+    </div>
+    ${all.length?`<div class="list">${all.map(x=>`
+      <div class="item"><div>
+        <div class="nm">${x._k==='perm'?t('permission'):t('leave')+' · '+t(x.leave_type||'annual')}</div>
+        <div class="meta">${x._k==='perm'
+          ? `${x.req_date} · ${hm(x.from_time)} – ${hm(x.to_time)}`
+          : `${x.start_date} → ${x.end_date}`}</div>
+        ${x.owner_note?`<div class="meta" style="color:var(--navy)">💬 ${esc(x.owner_note)}</div>`:''}
+      </div>${stChip(x.status)}</div>`).join('')}</div>`
+    :`<div class="empty">${t('noReq')}</div>`}`;
+
+  $('#rP').onclick = permForm;
+  $('#rL').onclick = leaveForm;
+}
+
+function permForm(){
+  const o = sheet(`
+    <h3>${t('newPerm')}</h3>
+    <div class="field"><label>${t('date')}</label><input type="date" id="qD" value="${todayISO()}"></div>
+    <div class="field"><label>${t('from')}</label><input type="time" id="qF" value="13:00" step="900"></div>
+    <div class="field"><label>${t('to')}</label><input type="time" id="qT" value="14:00" step="900"></div>
+    <div class="field"><label>${t('reason')}</label><textarea id="qR" rows="2"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+      <button class="btn" id="qOk">${t('send')}</button>
+    </div>`);
+  o.querySelector('#qOk').onclick = async () => {
+    const b=o.querySelector('#qOk'); b.disabled=true;
+    const { error } = await sb.from('permissions').insert({
+      branch_id:S.me.branch_id, staff_id:S.me.id,
+      req_date:o.querySelector('#qD').value,
+      from_time:o.querySelector('#qF').value,
+      to_time:o.querySelector('#qT').value,
+      reason:o.querySelector('#qR').value.trim()||null
+    });
+    if(error){ b.disabled=false; toast(error.message,'err'); return; }
+    closeSheet(); toast(t('saved'),'ok'); render();
+  };
+}
+
+function leaveForm(){
+  const o = sheet(`
+    <h3>${t('newLeave')}</h3>
+    <div class="field"><label>${t('leaveType')}</label>
+      <select id="lT"><option value="annual">${t('annual')}</option>
+        <option value="sick">${t('sick')}</option>
+        <option value="unpaid">${t('unpaid')}</option></select></div>
+    <div class="field"><label>${t('from')}</label><input type="date" id="lF" value="${todayISO()}"></div>
+    <div class="field"><label>${t('to')}</label><input type="date" id="lE" value="${todayISO()}"></div>
+    <div class="field"><label>${t('reason')}</label><textarea id="lR" rows="2"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+      <button class="btn" id="lOk">${t('send')}</button>
+    </div>`);
+  o.querySelector('#lOk').onclick = async () => {
+    const b=o.querySelector('#lOk'); b.disabled=true;
+    const { error } = await sb.from('leaves').insert({
+      branch_id:S.me.branch_id, staff_id:S.me.id,
+      leave_type:o.querySelector('#lT').value,
+      start_date:o.querySelector('#lF').value,
+      end_date:o.querySelector('#lE').value,
+      notes:o.querySelector('#lR').value.trim()||null,
+      status:'pending'
+    });
+    if(error){ b.disabled=false; toast(error.message,'err'); return; }
+    closeSheet(); toast(t('saved'),'ok'); render();
+  };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ١٨ ــ الرسائل
+   ══════════════════════════════════════════════════════════ */
+async function vMsg(){ return openThread(S.me.id, true); }
+
+async function openThread(staffId, isSelf){
+  const { data:ms } = await sb.from('messages').select('*')
+    .eq('staff_id',staffId).order('created_at');
+
+  const who = S.staff.find(s=>s.id===staffId);
+  const title = isSelf ? t('msgOwner') : nameOf(who||{});
+
+  $('#view').innerHTML = `
+    ${isSelf ? `<div class="page-title">${title}</div>`
+             : backBar(title,'msgs')}
+    ${(ms||[]).length?`<div class="chat" id="ch">${ms.map(m=>{
+      const mine = m.sender_id===S.me.id;
+      return `<div class="bub ${mine?'me':'you'}">${esc(m.body)}
+        <div class="tm">${hhmm(m.created_at)} · ${m.created_at.slice(5,10)}</div></div>`;
+    }).join('')}</div>`:`<div class="empty">${t('noMsg')}</div>`}
+    <div class="composer">
+      <textarea id="mb" rows="1" placeholder="${t('writeMsg')}"></textarea>
+      <button id="ms">➤</button>
+    </div>`;
+
+  const ta=$('#mb');
+  ta.oninput = () => { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,110)+'px'; };
+  $('#ms').onclick = async () => {
+    const body = ta.value.trim();
+    if(!body) return;
+    $('#ms').disabled=true;
+    const { error } = await sb.from('messages').insert({
+      staff_id:staffId, sender_id:S.me.id, body,
+      read_by_owner:S.me.role==='owner', read_by_staff:S.me.role==='staff'
+    });
+    if(error){ $('#ms').disabled=false; toast(error.message,'err'); return; }
+    ta.value=''; await refreshCounts(); buildNav();
+    isSelf ? vMsg() : openThread(staffId,false);
+  };
+
+  // تعليم كمقروء
+  const fld = S.me.role==='owner' ? 'read_by_owner' : 'read_by_staff';
+  const un = (ms||[]).filter(m=>!m[fld] && m.sender_id!==S.me.id).map(m=>m.id);
+  if(un.length){
+    await sb.from('messages').update({[fld]:true}).in('id',un);
+    await refreshCounts(); buildNav();
+  }
+  window.scrollTo(0,document.body.scrollHeight);
+}
+
+async function vThreads(){
+  const { data:ms } = await sb.from('messages').select('staff_id,body,created_at,sender_id,read_by_owner')
+    .order('created_at',{ascending:false}).limit(300);
+  const last={}, unread={};
+  (ms||[]).forEach(m=>{
+    if(!last[m.staff_id]) last[m.staff_id]=m;
+    if(!m.read_by_owner && m.sender_id!==S.me.id) unread[m.staff_id]=(unread[m.staff_id]||0)+1;
+  });
+
+  $('#view').innerHTML = `
+    ${backBar(t('msgs'),'more')}
+    <div class="list">${S.staff.map(s=>{
+      const l=last[s.id], u=unread[s.id]||0;
+      return `<div class="item" data-s="${s.id}"><div style="min-width:0">
+        <div class="nm">${esc(nameOf(s))}</div>
+        <div class="meta" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">
+          ${l?esc(l.body):'—'}</div>
+      </div>${u?`<span class="chip" style="background:var(--danger);color:#fff">${u}</span>`
+              :'<span style="color:var(--muted)">›</span>'}</div>`;
+    }).join('')}</div>`;
+
+  document.querySelectorAll('.item[data-s]').forEach(el=>{
+    el.onclick = () => { S.tab='thread'; S.thread=el.dataset.s; buildNav(); openThread(el.dataset.s,false); };
+  });
+}
+function vThread(){ return openThread(S.thread,false); }
+
+/* ══════════════════════════════════════════════════════════
+   ١٩ ــ المزيد (المديرة)
    ══════════════════════════════════════════════════════════ */
 function vMore(){
+  const card=(tab,lbl,ic,n)=>`
+    <div class="menu-card" onclick="go('${tab}')">
+      ${n?`<span class="badge">${n}</span>`:''}
+      <svg viewBox="0 0 24 24">${ICON[ic]}</svg>${t(lbl)}</div>`;
   $('#view').innerHTML = `
-    <div class="page-title">${t('services')}</div>
-    <div class="list" style="margin-bottom:24px">${S.services.map(s=>`
+    <div class="page-title">${t('nMore')}</div>
+    <div class="menu-grid">
+      ${card('requests','requests','req',S.counts.req)}
+      ${card('payroll','payroll','pay')}
+      ${card('msgs','msgs','msg',S.counts.msg)}
+      ${card('ann','ann','ann')}
+      ${card('services','services','srv')}
+      ${card('team','team','cli')}
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ٢٠ ــ الطلبات (المديرة)
+   ══════════════════════════════════════════════════════════ */
+async function vRequests(){
+  const [{ data:perms }, { data:lvs }] = await Promise.all([
+    sb.from('permissions').select('*').order('created_at',{ascending:false}).limit(60),
+    sb.from('leaves').select('*').order('created_at',{ascending:false}).limit(60),
+  ]);
+  const nm = id => nameOf(S.staff.find(s=>s.id===id)||{});
+  const all = [
+    ...(perms||[]).map(x=>({...x,_k:'perm'})),
+    ...(lvs||[]).map(x=>({...x,_k:'leave'})),
+  ].sort((a,b)=>{
+    if(a.status==='pending' && b.status!=='pending') return -1;
+    if(b.status==='pending' && a.status!=='pending') return 1;
+    return (b.created_at||'').localeCompare(a.created_at||'');
+  });
+
+  $('#view').innerHTML = `
+    ${backBar(t('requests'),'more')}
+    ${all.length?`<div class="list">${all.map(x=>`
+      <div class="item" data-k="${x._k}" data-id="${x.id}"><div>
+        <div class="nm">${esc(nm(x.staff_id))} · ${x._k==='perm'?t('permission'):t('leave')}</div>
+        <div class="meta">${x._k==='perm'
+          ? `${x.req_date} · ${hm(x.from_time)} – ${hm(x.to_time)}`
+          : `${t(x.leave_type||'annual')} · ${x.start_date} → ${x.end_date}`}</div>
+        ${x.reason||x.notes?`<div class="meta">${esc(x.reason||x.notes)}</div>`:''}
+      </div>${stChip(x.status)}</div>`).join('')}</div>`
+    :`<div class="empty">${t('noReq')}</div>`}`;
+
+  document.querySelectorAll('.item[data-id]').forEach(el=>{
+    el.onclick = () => {
+      const k=el.dataset.k;
+      const x=(k==='perm'?perms:lvs).find(r=>r.id===el.dataset.id);
+      reqDecide(x,k,nm(x.staff_id));
+    };
+  });
+}
+
+function reqDecide(x,k,who){
+  const done = x.status!=='pending';
+  const o = sheet(`
+    <h3>${esc(who)} — ${k==='perm'?t('permission'):t('leave')}</h3>
+    <div class="card" style="margin-bottom:14px">
+      ${k==='perm'
+        ? `<div class="pay-row"><span class="lb">${t('date')}</span><b>${x.req_date}</b></div>
+           <div class="pay-row"><span class="lb">${t('time')}</span><b>${hm(x.from_time)} – ${hm(x.to_time)}</b></div>`
+        : `<div class="pay-row"><span class="lb">${t('leaveType')}</span><b>${t(x.leave_type||'annual')}</b></div>
+           <div class="pay-row"><span class="lb">${t('from')}</span><b>${x.start_date}</b></div>
+           <div class="pay-row"><span class="lb">${t('to')}</span><b>${x.end_date}</b></div>`}
+      <div class="pay-row"><span class="lb">${t('status')}</span><b>${t(x.status)}</b></div>
+      ${x.reason||x.notes?`<div style="margin-top:10px;padding-top:10px;
+        border-top:1px solid var(--line);font-size:13px;color:var(--muted)">${esc(x.reason||x.notes)}</div>`:''}
+    </div>
+    ${done?'':`
+      <div class="field"><label>${t('notes')}</label><textarea id="dN" rows="2"></textarea></div>
+      ${k==='leave'
+        ? `<button class="btn btn-2 btn-full" style="margin-bottom:9px" data-a="paid">${t('approvePaid')}</button>
+           <button class="btn btn-full" style="margin-bottom:9px" data-a="unpaid">${t('approveUnpaid')}</button>`
+        : `<button class="btn btn-2 btn-full" style="margin-bottom:9px" data-a="ok">${t('approve')}</button>`}
+      <button class="btn btn-danger btn-full" data-a="no">${t('reject')}</button>`}
+    <button class="btn-sm btn-ghost btn-full" style="margin-top:12px"
+      onclick="closeSheet()">${t('close')}</button>`);
+
+  o.querySelectorAll('[data-a]').forEach(b=>{
+    b.onclick = async () => {
+      b.disabled=true;
+      const a=b.dataset.a;
+      const note=(o.querySelector('#dN')?.value||'').trim()||null;
+      const patch = {
+        status: a==='no' ? 'rejected' : 'approved',
+        decided_by:S.me.id, decided_at:new Date().toISOString(), owner_note:note
+      };
+      if(k==='leave') patch.is_paid = (a!=='unpaid');
+      const { error } = await sb.from(k==='perm'?'permissions':'leaves')
+        .update(patch).eq('id',x.id);
+      if(error){ b.disabled=false; toast(error.message,'err'); return; }
+      closeSheet(); toast(t('saved'),'ok');
+      await refreshCounts(); buildNav(); render();
+    };
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ٢١ ــ الرواتب (المديرة)
+   ══════════════════════════════════════════════════════════ */
+async function vPayroll(){
+  const { data:rows, error } = await sb.rpc('payroll',{p_ym:S.ym});
+  if(error){ $('#view').innerHTML=`<div class="empty">${esc(error.message)}</div>`; return; }
+  const tot = (rows||[]).reduce((s,r)=>s+r.net_fils,0);
+
+  $('#view').innerHTML = `
+    ${backBar(t('payroll'),'more')}
+    <div class="field"><input type="month" id="pm" value="${S.ym}"></div>
+    <div class="pay-net" style="margin:0 0 14px"><span>${t('total')}</span><b>${money(tot)}</b></div>
+    <div class="list">${(rows||[]).map(r=>`
+      <div class="item" data-id="${r.staff_id}"><div>
+        <div class="nm">${esc(r.staff_name)}</div>
+        <div class="meta">${t('baseSalary')} ${money(r.base_fils)} · ${t('daysPresent')} ${r.days_present}</div>
+        ${r.late_deduct_fils||r.absence_deduct_fils||r.manual_deduct_fils
+          ? `<div class="meta" style="color:var(--danger)">− ${money(
+              r.late_deduct_fils+r.absence_deduct_fils+r.manual_deduct_fils)}</div>`:''}
+      </div><b>${money(r.net_fils)}</b></div>`).join('')}</div>`;
+
+  $('#pm').onchange = e => { S.ym=e.target.value; render(); };
+  document.querySelectorAll('.item[data-id]').forEach(el=>{
+    el.onclick = () => staffPay(el.dataset.id, (rows||[]).find(r=>r.staff_id===el.dataset.id));
+  });
+}
+
+async function staffPay(id, r){
+  const [{ data:cfg }, { data:adj }] = await Promise.all([
+    sb.from('staff_salary').select('*').eq('staff_id',id).maybeSingle(),
+    sb.from('salary_adjustments').select('*').eq('staff_id',id).eq('ym',S.ym).order('created_at'),
+  ]);
+  const c = cfg || {};
+
+  const o = sheet(`
+    <h3>${esc(r.staff_name)} — ${S.ym}</h3>
+    <div class="card" style="margin-bottom:12px">
+      <div class="pay-row"><span class="lb">${t('baseSalary')}</span><b>${money(r.base_fils)}</b></div>
+      <div class="pay-row"><span class="lb">${t('daysPresent')}</span><b>${r.days_present}</b></div>
+      ${r.late_deduct_fils?`<div class="pay-row neg"><span class="lb">${t('lateDeduct')} (${r.late_minutes} ${t('min')})</span>
+        <b>− ${money(r.late_deduct_fils)}</b></div>`:''}
+      ${r.absence_deduct_fils?`<div class="pay-row neg"><span class="lb">${t('absDeduct')} (${r.absence_days})</span>
+        <b>− ${money(r.absence_deduct_fils)}</b></div>`:''}
+      ${r.manual_deduct_fils?`<div class="pay-row neg"><span class="lb">${t('otherDeduct')}</span>
+        <b>− ${money(r.manual_deduct_fils)}</b></div>`:''}
+      ${r.bonus_fils?`<div class="pay-row pos"><span class="lb">${t('bonus')}</span>
+        <b>+ ${money(r.bonus_fils)}</b></div>`:''}
+    </div>
+    <div class="pay-net" style="margin:0 0 14px"><span>${t('net')}</span><b>${money(r.net_fils)}</b></div>
+
+    <div style="font-weight:600;margin-bottom:8px">${t('adjustments')}</div>
+    ${(adj||[]).length?`<div class="list" style="margin-bottom:12px">${adj.map(a=>`
+      <div class="item"><div>
+        <div class="nm">${esc(a.reason)}</div><div class="meta">${a.created_at.slice(0,10)}</div>
+      </div><div style="display:flex;gap:8px;align-items:center">
+        <b style="color:${a.kind==='bonus'?'var(--ok)':'var(--danger)'}">
+          ${a.kind==='bonus'?'+':'−'} ${money(a.amount_fils)}</b>
+        <button class="btn-sm btn-ghost" data-del="${a.id}">✕</button>
+      </div></div>`).join('')}</div>`
+     :`<div class="empty" style="padding:16px">${t('noAdj')}</div>`}
+
+    <button class="btn btn-2 btn-full" style="margin-bottom:9px" id="sAdj">+ ${t('addAdj')}</button>
+    <button class="btn btn-ghost btn-full" id="sCfg">${t('editSalary')}</button>
+    <button class="btn-sm btn-ghost btn-full" style="margin-top:12px"
+      onclick="closeSheet()">${t('close')}</button>`);
+
+  o.querySelectorAll('[data-del]').forEach(b=>{
+    b.onclick = async () => {
+      if(!confirm(t('deleteQ'))) return;
+      await sb.from('salary_adjustments').delete().eq('id',b.dataset.del);
+      closeSheet(); render();
+    };
+  });
+  o.querySelector('#sAdj').onclick = () => { closeSheet(); adjForm(id); };
+  o.querySelector('#sCfg').onclick = () => { closeSheet(); salaryForm(id,c,r.staff_name); };
+}
+
+function adjForm(id){
+  const o = sheet(`
+    <h3>${t('addAdj')}</h3>
+    <div class="field"><label>${t('kind')}</label>
+      <select id="aK"><option value="deduction">${t('deduction')}</option>
+        <option value="bonus">${t('bonus')}</option></select></div>
+    <div class="field"><label>${t('amount')} (${t('kwd')})</label>
+      <input type="number" id="aV" step="0.5" min="0" inputmode="decimal"></div>
+    <div class="field"><label>${t('reason')} *</label><input id="aR"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+      <button class="btn" id="aOk">${t('save')}</button>
+    </div>`);
+  o.querySelector('#aOk').onclick = async () => {
+    const v=Math.round((+o.querySelector('#aV').value||0)*1000);
+    const rs=o.querySelector('#aR').value.trim();
+    if(!v||!rs){ toast(t('required'),'err'); return; }
+    const b=o.querySelector('#aOk'); b.disabled=true;
+    const { error } = await sb.from('salary_adjustments').insert({
+      staff_id:id, ym:S.ym, kind:o.querySelector('#aK').value,
+      amount_fils:v, reason:rs, created_by:S.me.id
+    });
+    if(error){ b.disabled=false; toast(error.message,'err'); return; }
+    closeSheet(); toast(t('saved'),'ok'); render();
+  };
+}
+
+function salaryForm(id,c,who){
+  const o = sheet(`
+    <h3>${t('salarySettings')} — ${esc(who)}</h3>
+    <div class="field"><label>${t('baseSalary')} (${t('kwd')})</label>
+      <input type="number" id="vB" step="1" min="0" inputmode="decimal"
+        value="${((c.base_fils||0)/1000).toFixed(0)}"></div>
+    <div class="field"><label>${t('workDays')}</label>
+      <input type="number" id="vD" value="${c.work_days_per_month||26}"></div>
+    <div class="field"><label>${t('dailyHours')}</label>
+      <input type="number" id="vH" step="0.5" value="${c.daily_hours||9}"></div>
+    <div class="field"><label>${t('shiftStart')}</label>
+      <input type="time" id="vS" value="${hm(c.shift_start)||'11:00'}"></div>
+    <div class="field"><label>${t('grace')}</label>
+      <input type="number" id="vG" value="${c.grace_minutes??15}"></div>
+    <div class="field"><label>${t('deductLate')}</label>
+      <select id="vL"><option value="1" ${c.deduct_late!==false?'selected':''}>${t('yes')}</option>
+        <option value="0" ${c.deduct_late===false?'selected':''}>${t('no')}</option></select></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+      <button class="btn" id="vOk">${t('save')}</button>
+    </div>`);
+  o.querySelector('#vOk').onclick = async () => {
+    const b=o.querySelector('#vOk'); b.disabled=true;
+    const { error } = await sb.from('staff_salary').upsert({
+      staff_id:id,
+      base_fils:Math.round((+o.querySelector('#vB').value||0)*1000),
+      work_days_per_month:+o.querySelector('#vD').value||26,
+      daily_hours:+o.querySelector('#vH').value||9,
+      shift_start:o.querySelector('#vS').value,
+      grace_minutes:+o.querySelector('#vG').value||0,
+      deduct_late:o.querySelector('#vL').value==='1',
+      updated_at:new Date().toISOString()
+    },{onConflict:'staff_id'});
+    if(error){ b.disabled=false; toast(error.message,'err'); return; }
+    closeSheet(); toast(t('saved'),'ok'); render();
+  };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ٢٢ ــ الإعلانات (المديرة)
+   ══════════════════════════════════════════════════════════ */
+async function vAnn(){
+  const { data:rows } = await sb.from('announcements').select('*')
+    .order('created_at',{ascending:false}).limit(30);
+
+  $('#view').innerHTML = `
+    ${backBar(t('ann'),'more')}
+    <button class="btn btn-full" style="margin-bottom:16px" id="nA">+ ${t('newAnn')}</button>
+    ${(rows||[]).length?`<div class="list">${rows.map(a=>`
+      <div class="item"><div style="min-width:0">
+        <div class="nm">${esc(a.title||'—')}</div>
+        <div class="meta">${esc((a.body||'').slice(0,70))}</div>
+        <div class="meta">${a.created_at.slice(0,10)}</div>
+      </div><button class="btn-sm ${a.is_active?'btn-2':'btn-ghost'}" data-t="${a.id}"
+        data-v="${a.is_active?0:1}">${a.is_active?t('active'):t('activate')}</button></div>`).join('')}</div>`
+    :`<div class="empty">—</div>`}`;
+
+  $('#nA').onclick = () => {
+    const o = sheet(`
+      <h3>${t('newAnn')}</h3>
+      <div class="field"><label>${t('annTitle')}</label><input id="tI"></div>
+      <div class="field"><label>${t('annBody')} *</label><textarea id="tB" rows="4"></textarea></div>
+      <div class="sheet-actions">
+        <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+        <button class="btn" id="tOk">${t('save')}</button>
+      </div>`);
+    o.querySelector('#tOk').onclick = async () => {
+      const body=o.querySelector('#tB').value.trim();
+      if(!body){ toast(t('required'),'err'); return; }
+      const b=o.querySelector('#tOk'); b.disabled=true;
+      await sb.from('announcements').update({is_active:false}).eq('is_active',true);
+      const { error } = await sb.from('announcements').insert({
+        branch_id:S.me.branch_id, title:o.querySelector('#tI').value.trim()||null,
+        body, created_by:S.me.id
+      });
+      if(error){ b.disabled=false; toast(error.message,'err'); return; }
+      closeSheet(); toast(t('saved'),'ok'); render();
+    };
+  };
+
+  document.querySelectorAll('[data-t]').forEach(b=>{
+    b.onclick = async () => {
+      const on = b.dataset.v==='1';
+      if(on) await sb.from('announcements').update({is_active:false}).eq('is_active',true);
+      await sb.from('announcements').update({is_active:on}).eq('id',b.dataset.t);
+      render();
+    };
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ٢٣ ــ الخدمات والفريق
+   ══════════════════════════════════════════════════════════ */
+function vServices(){
+  $('#view').innerHTML = `
+    ${backBar(t('services'),'more')}
+    <div class="list">${S.services.map(s=>`
       <div class="item"><div>
         <div class="nm">${esc(nameOf(s))}</div>
         <div class="meta">${s.duration_minutes} ${t('min')}</div>
-      </div><b>${money(s.price_fils)}</b></div>`).join('')}</div>
+      </div><b>${money(s.price_fils)}</b></div>`).join('')}</div>`;
+}
 
-    <div class="page-title">${t('team')}</div>
+function vTeam(){
+  $('#view').innerHTML = `
+    ${backBar(t('team'),'more')}
     <div class="list">${S.staff.map(s=>`
       <div class="item"><div>
         <div class="nm">${esc(nameOf(s))}</div>
@@ -942,10 +1625,11 @@ function vMore(){
 }
 
 /* ══════════════════════════════════════════════════════════
-   ١٧ ــ البدء
+   ٢٤ ــ البدء
    ══════════════════════════════════════════════════════════ */
 lang = store.getItem('lang') || 'ar';
 applyLang();
+
 boot();
 </script>
 </body>
