@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>صالون هدى العرادي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ==========  الإعدادات اللونية  ========== */
+:root{
+  --navy:#0F1820; --sage:#8FAF8F; --mint:#C5DDD0; --cream:#F8F6F2;
+  --line:#E4E0D8; --muted:#7A8087; --danger:#C0574E; --ok:#5E8C61;
+  --radius:14px;
+  --shadow:0 1px 3px rgba(15,24,32,.08), 0 8px 24px rgba(15,24,32,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:'IBM Plex Sans Arabic',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--cream); color:var(--navy); font-size:15px; line-height:1.55;
+  overscroll-behavior:none;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:none;background:none}
+.hidden{display:none !important}
+
+/* ==========  عناصر عامة  ========== */
+.btn{
+  background:var(--navy);color:#fff;padding:11px 20px;border-radius:var(--radius);
+  font-weight:600;transition:opacity .15s;white-space:nowrap;
+}
+.btn:active{opacity:.75}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-2{background:var(--sage)}
+.btn-ghost{background:transparent;border:1.5px solid var(--line);color:var(--navy)}
+.btn-danger{background:var(--danger)}
+.btn-sm{padding:7px 14px;font-size:13px;border-radius:10px}
+.btn-full{width:100%}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--muted)}
+.field input,.field select,.field textarea{
+  width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:12px;
+  background:#fff;outline:none;transition:border-color .15s;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--sage)}
+
+.card{background:#fff;border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.chip{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:600}
+
+.toast{
+  position:fixed;bottom:88px;inset-inline:16px;z-index:9999;
+  background:var(--navy);color:#fff;padding:14px 18px;border-radius:var(--radius);
+  text-align:center;font-weight:500;box-shadow:var(--shadow);
+  animation:up .25s ease;
+}
+.toast.err{background:var(--danger)}
+.toast.ok{background:var(--ok)}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+/* ==========  شاشة الدخول  ========== */
+#login{
+  min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:linear-gradient(160deg,var(--navy) 0%,#1c2b36 100%);
+}
+#login .box{width:100%;max-width:380px;background:#fff;border-radius:22px;padding:34px 26px}
+#login h1{font-size:23px;margin-bottom:4px;text-align:center}
+#login .sub{text-align:center;color:var(--muted);font-size:13px;margin-bottom:26px}
+
+/* ==========  الهيكل  ========== */
+#app{min-height:100dvh;display:flex;flex-direction:column;padding-bottom:76px}
+header{
+  background:var(--navy);color:#fff;padding:14px 18px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  position:sticky;top:0;z-index:50;
+}
+header .who{font-weight:600;font-size:15px}
+header .role{font-size:12px;opacity:.65}
+header .tools{display:flex;gap:8px;align-items:center}
+header button{
+  color:#fff;background:rgba(255,255,255,.14);padding:7px 13px;
+  border-radius:10px;font-size:13px;font-weight:600;
+}
+main{flex:1;padding:16px;max-width:1400px;width:100%;margin:0 auto}
+
+nav{
+  position:fixed;bottom:0;inset-inline:0;background:#fff;border-top:1px solid var(--line);
+  display:flex;z-index:60;padding-bottom:env(safe-area-inset-bottom);
+}
+nav button{
+  flex:1;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:11px;font-weight:600;color:var(--muted);
+}
+nav button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round}
+nav button.on{color:var(--navy)}
+
+.page-title{font-size:19px;font-weight:700;margin-bottom:14px}
+.row-between{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+
+/* ==========  التقويم  ========== */
+.datebar{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.datebar input{
+  flex:1;padding:9px 12px;border:1.5px solid var(--line);border-radius:12px;background:#fff;
+}
+.datebar button{
+  background:#fff;border:1.5px solid var(--line);width:40px;height:40px;
+  border-radius:12px;font-size:17px;font-weight:700;
+}
+
+.cal-wrap{overflow-x:auto;background:#fff;border-radius:var(--radius);box-shadow:var(--shadow)}
+.cal{display:grid;min-width:max-content}
+.cal .hcell{
+  position:sticky;top:0;background:var(--navy);color:#fff;padding:11px 8px;
+  text-align:center;font-size:13px;font-weight:600;z-index:5;
+}
+.cal .hcell small{display:block;opacity:.6;font-size:11px;font-weight:400}
+.cal .tcell{
+  padding:6px 8px;font-size:11px;color:var(--muted);text-align:center;
+  border-top:1px solid var(--line);background:#FBFAF7;
+  position:sticky;inset-inline-start:0;z-index:4;font-variant-numeric:tabular-nums;
+}
+.cal .slot{
+  border-top:1px solid var(--line);border-inline-start:1px solid var(--line);
+  min-height:42px;padding:2px;position:relative;
+}
+.cal .slot:active{background:#F2F5F2}
+.appt{
+  border-radius:9px;padding:5px 7px;font-size:12px;line-height:1.3;
+  cursor:pointer;height:100%;overflow:hidden;border-inline-start:3px solid;
+}
+.appt b{display:block;font-weight:600}
+.appt small{opacity:.75;font-size:11px}
+.st-booked{background:#EEF3EE;border-color:var(--sage)}
+.st-confirmed{background:var(--mint);border-color:var(--sage)}
+.st-in_progress{background:#FFF2D8;border-color:#D9A441}
+.st-completed{background:#EDEDED;border-color:#9AA0A6;opacity:.72}
+.st-cancelled,.st-no_show{background:#F7E9E8;border-color:var(--danger);opacity:.6;
+  text-decoration:line-through}
+
+/* ==========  القوائم  ========== */
+.list{display:flex;flex-direction:column;gap:9px}
+.item{
+  background:#fff;border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.item .nm{font-weight:600}
+.item .meta{font-size:12.5px;color:var(--muted)}
+
+/* ==========  الإحصائيات  ========== */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-bottom:20px}
+.stat{background:#fff;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+.stat .lbl{font-size:12.5px;color:var(--muted);margin-bottom:5px}
+.stat .val{font-size:25px;font-weight:700;font-variant-numeric:tabular-nums}
+.stat.hi{background:var(--navy);color:#fff}
+.stat.hi .lbl{color:rgba(255,255,255,.6)}
+
+/* ==========  النوافذ  ========== */
+.overlay{
+  position:fixed;inset:0;background:rgba(15,24,32,.45);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center;
+  animation:fade .18s ease;
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.sheet{
+  background:var(--cream);width:100%;max-width:520px;
+  border-radius:22px 22px 0 0;padding:22px;
+  max-height:92dvh;overflow-y:auto;animation:up .25s ease;
+}
+.sheet h3{font-size:18px;margin-bottom:16px}
+.sheet-actions{display:flex;gap:9px;margin-top:18px}
+.sheet-actions .btn{flex:1}
+@media(min-width:640px){
+  .overlay{align-items:center}
+  .sheet{border-radius:22px;max-height:88dvh}
+}
+
+/* ==========  الحضور  ========== */
+.att-big{
+  background:#fff;border-radius:22px;padding:30px 22px;text-align:center;
+  box-shadow:var(--shadow);margin-bottom:16px;
+}
+.att-big .state{font-size:14px;color:var(--muted);margin-bottom:6px}
+.att-big .clock{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;margin-bottom:20px}
+.att-big .btn{padding:16px;font-size:16px}
+
+/* ==========  متفرقات  ========== */
+.empty{text-align:center;padding:44px 20px;color:var(--muted)}
+.empty svg{width:44px;height:44px;stroke:var(--line);fill:none;stroke-width:1.5;margin-bottom:10px}
+.spin{
+  width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--navy);
+  border-radius:50%;animation:sp .7s linear infinite;margin:44px auto;
+}
+@keyframes sp{to{transform:rotate(360deg)}}
+[dir=ltr] .appt,[dir=ltr] .cal .slot{border-inline-start:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<!-- ══════════  شاشة الدخول  ══════════ -->
+<div id="login">
+  <div class="box">
+    <h1 id="lgTitle">صالون هدى العرادي</h1>
+    <p class="sub" id="lgSub">سجّلي الدخول للمتابعة</p>
+    <div class="field">
+      <label id="lbEmail">البريد الإلكتروني</label>
+      <input type="email" id="email" autocomplete="username" inputmode="email">
+    </div>
+    <div class="field">
+      <label id="lbPass">كلمة السر</label>
+      <input type="password" id="pass" autocomplete="current-password">
+    </div>
+    <button class="btn btn-full" id="btnLogin">دخول</button>
+    <button class="btn-sm btn-ghost btn-full" id="btnLang" style="margin-top:12px">English</button>
+  </div>
+</div>
+
+<!-- ══════════  التطبيق  ══════════ -->
+<div id="app" class="hidden">
+  <header>
+    <div>
+      <div class="who" id="hName">—</div>
+      <div class="role" id="hRole">—</div>
+    </div>
+    <div class="tools">
+      <button id="btnLang2">EN</button>
+      <button id="btnOut">خروج</button>
+    </div>
+  </header>
+
+  <main id="view"><div class="spin"></div></main>
+
+  <nav id="nav"></nav>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   ١ ــ الإعدادات   (عدّلي هنا فقط)
+   ══════════════════════════════════════════════════════════ */
+const CFG = {
+  url : 'https://hlrhpmsfcvamljjbiljo.supabase.co',
+  key : 'sb_publishable_jSjN78kc7_IV6xYf7FVhTw_S0SX7xjh',
+  openHour  : 11,   // ساعة فتح الصالون (11 = ١١ صباحاً)
+  closeHour : 20,   // ساعة الإغلاق (20 = ٨ مساءً)
+  slotMin   : 30,   // طول الخانة بالدقائق
+};
+
+/* ══════════════════════════════════════════════════════════
+   ٢ ــ الترجمة
+   ══════════════════════════════════════════════════════════ */
+const T = {
+  ar:{
+    salon:'صالون هدى العرادي', signin:'سجّلي الدخول للمتابعة',
+    email:'البريد الإلكتروني', pass:'كلمة السر', login:'دخول', logout:'خروج',
+    owner:'مديرة', receptionist:'استقبال', staff:'موظفة',
+    nDash:'الرئيسية', nCal:'المواعيد', nClients:'العميلات', nAtt:'الدوام', nMore:'المزيد',
+    today:'اليوم', revToday:'إيرادات اليوم', apptToday:'مواعيد اليوم',
+    doneToday:'خدمات منتهية', clientsTotal:'إجمالي العميلات',
+    newAppt:'موعد جديد', client:'العميلة', service:'الخدمة', staffM:'الموظفة',
+    date:'التاريخ', time:'الوقت', notes:'ملاحظات', save:'حفظ', cancel:'إلغاء',
+    pick:'— اختاري —', search:'بحث…',
+    newClient:'عميلة جديدة', name:'الاسم', phone:'الجوال',
+    allergies:'حساسية / تنبيهات', visits:'زيارة',
+    status:'الحالة', booked:'محجوز', confirmed:'مؤكد', in_progress:'جارية',
+    completed:'منتهية', cancelled:'ملغي', no_show:'لم تحضر',
+    start:'ابدأي الخدمة', finish:'خلصت وادفع', cancelAppt:'إلغاء الموعد',
+    invoice:'الفاتورة', subtotal:'المجموع', discount:'خصم', total:'الإجمالي',
+    payMethod:'طريقة الدفع', cash:'نقدي', knet:'كي نت', visa:'فيزا',
+    confirmPay:'تأكيد الدفع',
+    checkIn:'تسجيل حضور', startBreak:'بدء البريك', endBreak:'إنهاء البريك',
+    checkOut:'تسجيل انصراف', notIn:'لم تسجلي الحضور بعد', working:'في الدوام',
+    onBreak:'في البريك', doneDay:'انتهى دوامك اليوم',
+    since:'منذ', workedToday:'ساعات اليوم', breakToday:'دقائق البريك',
+    services:'الخدمات', team:'الفريق', min:'دقيقة', kwd:'د.ك',
+    noAppt:'لا توجد مواعيد', noClients:'لا توجد عميلات',
+    saved:'تم الحفظ', clash:'الموظفة محجوزة بهذا الوقت',
+    errLogin:'بيانات الدخول غير صحيحة', required:'أكملي الحقول المطلوبة',
+    attToday:'حضور اليوم', staffOnly:'خاص بالموظفات',
+  },
+  en:{
+    salon:'Huda Alaradi Salon', signin:'Sign in to continue',
+    email:'Email', pass:'Password', login:'Sign in', logout:'Sign out',
+    owner:'Owner', receptionist:'Reception', staff:'Staff',
+    nDash:'Home', nCal:'Calendar', nClients:'Clients', nAtt:'Shift', nMore:'More',
+    today:'Today', revToday:"Today's revenue", apptToday:"Today's bookings",
+    doneToday:'Completed', clientsTotal:'Total clients',
+    newAppt:'New booking', client:'Client', service:'Service', staffM:'Staff',
+    date:'Date', time:'Time', notes:'Notes', save:'Save', cancel:'Cancel',
+    pick:'— select —', search:'Search…',
+    newClient:'New client', name:'Name', phone:'Phone',
+    allergies:'Allergies / alerts', visits:'visits',
+    status:'Status', booked:'Booked', confirmed:'Confirmed', in_progress:'In progress',
+    completed:'Completed', cancelled:'Cancelled', no_show:'No show',
+    start:'Start service', finish:'Finish & pay', cancelAppt:'Cancel booking',
+    invoice:'Invoice', subtotal:'Subtotal', discount:'Discount', total:'Total',
+    payMethod:'Payment', cash:'Cash', knet:'KNET', visa:'Visa',
+    confirmPay:'Confirm payment',
+    checkIn:'Check in', startBreak:'Start break', endBreak:'End break',
+    checkOut:'Check out', notIn:'Not checked in yet', working:'On shift',
+    onBreak:'On break', doneDay:'Shift finished',
+    since:'since', workedToday:'Hours today', breakToday:'Break minutes',
+    services:'Services', team:'Team', min:'min', kwd:'KWD',
+    noAppt:'No bookings', noClients:'No clients',
+    saved:'Saved', clash:'That staff member is already booked',
+    errLogin:'Wrong email or password', required:'Please fill required fields',
+    attToday:'Attendance today', staffOnly:'Staff only',
+  }
+};
+
+/* ══════════════════════════════════════════════════════════
+   ٣ ــ الحالة والأدوات
+   ══════════════════════════════════════════════════════════ */
+let lang = 'ar';
+const t = k => T[lang][k] || k;
+
+// تخزين يعمل حتى لو localStorage معطّل
+const mem = {};
+const store = {
+  getItem:k=>{ try{return localStorage.getItem(k)}catch(e){return mem[k]??null} },
+  setItem:(k,v)=>{ try{localStorage.setItem(k,v)}catch(e){mem[k]=v} },
+  removeItem:k=>{ try{localStorage.removeItem(k)}catch(e){delete mem[k]} },
+};
+
+const sb = supabase.createClient(CFG.url, CFG.key, {
+  auth:{ storage:store, persistSession:true, autoRefreshToken:true }
+});
+
+const S = { me:null, staff:[], services:[], clients:[], tab:'', day:todayISO() };
+
+function todayISO(){
+  const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  return d.toISOString().slice(0,10);
+}
+const money  = f => (f/1000).toFixed(3);
+const nameOf = o => (lang==='ar' ? (o.name_ar||o.full_name_ar) : (o.name_en||o.full_name_en)) 
+                 || o.name_ar || o.full_name_ar || '';
+const hhmm   = iso => new Date(iso).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+const esc    = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function toast(msg,kind){
+  document.querySelectorAll('.toast').forEach(e=>e.remove());
+  const d=document.createElement('div');
+  d.className='toast'+(kind?' '+kind:'');
+  d.textContent=msg; document.body.appendChild(d);
+  setTimeout(()=>d.remove(),2800);
+}
+const $ = s => document.querySelector(s);
+
+function sheet(html){
+  const o=document.createElement('div'); o.className='overlay';
+  o.innerHTML=`<div class="sheet">${html}</div>`;
+  o.addEventListener('click',e=>{ if(e.target===o) o.remove(); });
+  document.body.appendChild(o); return o;
+}
+const closeSheet = () => document.querySelectorAll('.overlay').forEach(e=>e.remove());
+
+/* ══════════════════════════════════════════════════════════
+   ٤ ــ اللغة
+   ══════════════════════════════════════════════════════════ */
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.documentElement.dir  = lang==='ar' ? 'rtl' : 'ltr';
+  $('#lgTitle').textContent = t('salon');
+  $('#lgSub').textContent   = t('signin');
+  $('#lbEmail').textContent = t('email');
+  $('#lbPass').textContent  = t('pass');
+  $('#btnLogin').textContent= t('login');
+  $('#btnLang').textContent = lang==='ar' ? 'English' : 'عربي';
+  $('#btnLang2').textContent= lang==='ar' ? 'EN' : 'ع';
+  $('#btnOut').textContent  = t('logout');
+  if(S.me){ $('#hRole').textContent = t(S.me.role); buildNav(); render(); }
+}
+function toggleLang(){ lang = lang==='ar'?'en':'ar'; store.setItem('lang',lang); applyLang(); }
+$('#btnLang').onclick = toggleLang;
+$('#btnLang2').onclick = toggleLang;
+
+/* ══════════════════════════════════════════════════════════
+   ٥ ــ الدخول والخروج
+   ══════════════════════════════════════════════════════════ */
+$('#btnLogin').onclick = async () => {
+  const b=$('#btnLogin'); b.disabled=true;
+  const { error } = await sb.auth.signInWithPassword({
+    email: $('#email').value.trim(), password: $('#pass').value
+  });
+  b.disabled=false;
+  if(error){ toast(t('errLogin'),'err'); return; }
+  boot();
+};
+$('#pass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#btnLogin').click(); });
+$('#btnOut').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+/* ══════════════════════════════════════════════════════════
+   ٦ ــ التشغيل
+   ══════════════════════════════════════════════════════════ */
+async function boot(){
+  const { data:{ user } } = await sb.auth.getUser();
+  if(!user){ $('#login').classList.remove('hidden'); $('#app').classList.add('hidden'); return; }
+
+  const { data:me } = await sb.from('profiles').select('*').eq('id',user.id).single();
+  if(!me){ toast('لا يوجد ملف لهذا الحساب','err'); await sb.auth.signOut(); return; }
+  S.me = me;
+
+  $('#login').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+  $('#hName').textContent = nameOf(me);
+  $('#hRole').textContent = t(me.role);
+
+  const [st,sv] = await Promise.all([
+    sb.from('profiles').select('*').eq('role','staff').eq('is_active',true).order('full_name_ar'),
+    sb.from('services').select('*, service_categories(name_ar,name_en)').eq('is_active',true).order('name_ar'),
+  ]);
+  S.staff    = st.data || [];
+  S.services = sv.data || [];
+
+  S.tab = me.role==='owner' ? 'dash' : (me.role==='staff' ? 'cal' : 'cal');
+  buildNav(); render();
+}
+
+/* ══════════════════════════════════════════════════════════
+   ٧ ــ شريط التنقل
+   ══════════════════════════════════════════════════════════ */
+const ICON = {
+  dash:'<path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/>',
+  cal :'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  cli :'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+  att :'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  more:'<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+};
+function buildNav(){
+  const r = S.me.role;
+  let tabs = [];
+  if(r==='owner')            tabs=[['dash','nDash','dash'],['cal','nCal','cal'],['clients','nClients','cli'],['att','nAtt','att'],['more','nMore','more']];
+  else if(r==='receptionist')tabs=[['cal','nCal','cal'],['clients','nClients','cli'],['att','nAtt','att']];
+  else                       tabs=[['cal','nCal','cal'],['att','nAtt','att']];
+
+  $('#nav').innerHTML = tabs.map(([id,lbl,ic])=>`
+    <button data-tab="${id}" class="${S.tab===id?'on':''}">
+      <svg viewBox="0 0 24 24">${ICON[ic]}</svg>${t(lbl)}
+    </button>`).join('');
+  $('#nav').querySelectorAll('button').forEach(b=>{
+    b.onclick=()=>{ S.tab=b.dataset.tab; buildNav(); render(); window.scrollTo(0,0); };
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ٨ ــ الموجّه
+   ══════════════════════════════════════════════════════════ */
+function render(){
+  const v=$('#view'); v.innerHTML='<div class="spin"></div>';
+  ({ dash:vDash, cal:vCal, clients:vClients, att:vAtt, more:vMore }[S.tab] || vCal)();
+}
+
+/* ══════════════════════════════════════════════════════════
+   ٩ ــ الرئيسية (المديرة)
+   ══════════════════════════════════════════════════════════ */
+async function vDash(){
+  const from = S.day+'T00:00:00', to = S.day+'T23:59:59';
+  const [inv, ap, cl] = await Promise.all([
+    sb.from('invoices').select('total_fils,status').gte('created_at',from).lte('created_at',to),
+    sb.from('appointments').select('id,status').gte('start_at',from).lte('start_at',to),
+    sb.from('clients').select('id',{count:'exact',head:true}).eq('is_active',true),
+  ]);
+  const paid = (inv.data||[]).filter(i=>['paid','partially_paid'].includes(i.status));
+  const rev  = paid.reduce((s,i)=>s+i.total_fils,0);
+  const appts= ap.data||[];
+  const done = appts.filter(a=>a.status==='completed').length;
+
+  $('#view').innerHTML = `
+    <div class="page-title">${t('today')} — ${S.day}</div>
+    <div class="stats">
+      <div class="stat hi"><div class="lbl">${t('revToday')}</div><div class="val">${money(rev)}</div></div>
+      <div class="stat"><div class="lbl">${t('apptToday')}</div><div class="val">${appts.length}</div></div>
+      <div class="stat"><div class="lbl">${t('doneToday')}</div><div class="val">${done}</div></div>
+      <div class="stat"><div class="lbl">${t('clientsTotal')}</div><div class="val">${cl.count||0}</div></div>
+    </div>
+    <button class="btn btn-full" id="go">${t('nCal')} ←</button>`;
+  $('#go').onclick=()=>{ S.tab='cal'; buildNav(); render(); };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ١٠ ــ التقويم
+   ══════════════════════════════════════════════════════════ */
+async function vCal(){
+  const isStaff = S.me.role==='staff';
+  const cols = isStaff ? S.staff.filter(s=>s.id===S.me.id) : S.staff;
+
+  let q = sb.from('appointments')
+    .select('*, appointment_services(price_fils, services(name_ar,name_en))')
+    .gte('start_at', S.day+'T00:00:00').lte('start_at', S.day+'T23:59:59')
+    .order('start_at');
+  if(isStaff) q = q.eq('staff_id', S.me.id);
+  const { data:appts } = await q;
+
+  const ids = [...new Set((appts||[]).map(a=>a.client_id))];
+  let cmap = {};
+  if(ids.length){
+    const { data:cs } = await sb.from('clients').select('id,full_name,phone').in('id',ids);
+    (cs||[]).forEach(c=>cmap[c.id]=c);
+  }
+
+  const slots=[]; 
+  for(let m=CFG.openHour*60; m<CFG.closeHour*60; m+=CFG.slotMin) slots.push(m);
+
+  const at = {};
+  (appts||[]).forEach(a=>{
+    const d=new Date(a.start_at);
+    const m=Math.floor((d.getHours()*60+d.getMinutes())/CFG.slotMin)*CFG.slotMin;
+    (at[a.staff_id+'|'+m] ||= []).push(a);
+  });
+
+  const canBook = S.me.role!=='staff';
+
+  $('#view').innerHTML = `
+    <div class="row-between">
+      <div class="page-title" style="margin:0">${t('nCal')}</div>
+      ${canBook?`<button class="btn btn-sm" id="add">+ ${t('newAppt')}</button>`:''}
+    </div>
+    <div class="datebar">
+      <button id="prev">‹</button>
+      <input type="date" id="dt" value="${S.day}">
+      <button id="next">›</button>
+    </div>
+    ${cols.length===0 ? `<div class="empty">${t('noAppt')}</div>` : `
+    <div class="cal-wrap"><div class="cal" style="grid-template-columns:56px repeat(${cols.length},minmax(132px,1fr))">
+      <div class="hcell"></div>
+      ${cols.map(s=>`<div class="hcell">${esc(nameOf(s))}<small>${esc(s.job_title||'')}</small></div>`).join('')}
+      ${slots.map(m=>`
+        <div class="tcell">${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}</div>
+        ${cols.map(s=>{
+          const list = at[s.id+'|'+m]||[];
+          return `<div class="slot" data-staff="${s.id}" data-min="${m}">${
+            list.map(a=>{
+              const c=cmap[a.client_id]||{};
+              const sv=(a.appointment_services||[]).map(x=>nameOf(x.services||{})).join(' + ');
+              return `<div class="appt st-${a.status}" data-id="${a.id}">
+                <b>${esc(c.full_name||'')}</b><small>${esc(sv)} · ${hhmm(a.start_at)}</small></div>`;
+            }).join('')
+          }</div>`;
+        }).join('')}
+      `).join('')}
+    </div></div>`}`;
+
+  $('#dt').onchange = e => { S.day=e.target.value; render(); };
+  $('#prev').onclick= () => shiftDay(-1);
+  $('#next').onclick= () => shiftDay(1);
+  if($('#add')) $('#add').onclick = () => apptForm();
+
+  document.querySelectorAll('.appt').forEach(el=>{
+    el.onclick = e => { e.stopPropagation(); apptDetail((appts||[]).find(a=>a.id===el.dataset.id), cmap); };
+  });
+  if(canBook) document.querySelectorAll('.slot').forEach(el=>{
+    el.onclick = () => {
+      const m=+el.dataset.min;
+      apptForm({ staff:el.dataset.staff,
+        time:`${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}` });
+    };
+  });
+}
+function shiftDay(n){
+  const d=new Date(S.day); d.setDate(d.getDate()+n);
+  S.day=d.toISOString().slice(0,10); render();
+}
+
+/* ══════════════════════════════════════════════════════════
+   ١١ ــ نموذج الموعد
+   ══════════════════════════════════════════════════════════ */
+async function apptForm(pre={}){
+  if(!S.clients.length){
+    const { data } = await sb.from('clients').select('id,full_name,phone')
+      .eq('is_active',true).order('full_name').limit(500);
+    S.clients = data||[];
+  }
+  const o = sheet(`
+    <h3>${t('newAppt')}</h3>
+    <div class="field"><label>${t('client')} *</label>
+      <select id="fCl"><option value="">${t('pick')}</option>
+        ${S.clients.map(c=>`<option value="${c.id}">${esc(c.full_name)}${c.phone?' · '+esc(c.phone):''}</option>`).join('')}
+      </select></div>
+    <button class="btn-sm btn-ghost" id="fNew" style="margin-bottom:14px">+ ${t('newClient')}</button>
+    <div class="field"><label>${t('service')} *</label>
+      <select id="fSv"><option value="">${t('pick')}</option>
+        ${S.services.map(s=>`<option value="${s.id}" data-d="${s.duration_minutes}">${esc(nameOf(s))} · ${s.duration_minutes}${t('min')} · ${money(s.price_fils)}</option>`).join('')}
+      </select></div>
+    <div class="field"><label>${t('staffM')} *</label>
+      <select id="fSt"><option value="">${t('pick')}</option>
+        ${S.staff.map(s=>`<option value="${s.id}" ${pre.staff===s.id?'selected':''}>${esc(nameOf(s))}</option>`).join('')}
+      </select></div>
+    <div class="field"><label>${t('date')}</label><input type="date" id="fD" value="${S.day}"></div>
+    <div class="field"><label>${t('time')}</label><input type="time" id="fT" value="${pre.time||'11:00'}" step="900"></div>
+    <div class="field"><label>${t('notes')}</label><textarea id="fN" rows="2"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="fX">${t('cancel')}</button>
+      <button class="btn" id="fOk">${t('save')}</button>
+    </div>`);
+
+  o.querySelector('#fX').onclick = closeSheet;
+  o.querySelector('#fNew').onclick = () => { closeSheet(); clientForm(); };
+
+  o.querySelector('#fOk').onclick = async () => {
+    const cl=o.querySelector('#fCl').value, st=o.querySelector('#fSt').value;
+    const so=o.querySelector('#fSv').selectedOptions[0];
+    if(!cl||!st||!so.value){ toast(t('required'),'err'); return; }
+
+    const svc = S.services.find(x=>x.id===so.value);
+    const start = new Date(`${o.querySelector('#fD').value}T${o.querySelector('#fT').value}:00`);
+    const end   = new Date(start.getTime() + (svc.duration_minutes+svc.buffer_minutes)*60000);
+
+    const btn=o.querySelector('#fOk'); btn.disabled=true;
+    const { data:ap, error } = await sb.from('appointments').insert({
+      branch_id:S.me.branch_id, client_id:cl, staff_id:st,
+      start_at:start.toISOString(), end_at:end.toISOString(),
+      notes:o.querySelector('#fN').value||null, created_by:S.me.id
+    }).select().single();
+
+    if(error){
+      btn.disabled=false;
+      toast(error.code==='23P01' ? t('clash') : error.message, 'err');
+      return;
+    }
+    await sb.from('appointment_services').insert({
+      appointment_id:ap.id, service_id:svc.id, staff_id:st,
+      price_fils:svc.price_fils, duration_minutes:svc.duration_minutes
+    });
+    closeSheet(); toast(t('saved'),'ok');
+    S.day = o.querySelector('#fD').value; render();
+  };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ١٢ ــ تفاصيل الموعد
+   ══════════════════════════════════════════════════════════ */
+function apptDetail(a, cmap){
+  if(!a) return;
+  const c  = cmap[a.client_id]||{};
+  const st = S.staff.find(s=>s.id===a.staff_id)||{};
+  const items = a.appointment_services||[];
+  const sum = items.reduce((s,i)=>s+i.price_fils,0);
+  const front = S.me.role!=='staff';
+  const open  = !['completed','cancelled','no_show'].includes(a.status);
+
+  const o = sheet(`
+    <h3>${esc(c.full_name||'')}</h3>
+    <div class="card" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="color:var(--muted)">${t('time')}</span>
+        <b>${hhmm(a.start_at)} – ${hhmm(a.end_at)}</b></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="color:var(--muted)">${t('staffM')}</span><b>${esc(nameOf(st))}</b></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="color:var(--muted)">${t('service')}</span>
+        <b>${items.map(i=>esc(nameOf(i.services||{}))).join(' + ')}</b></div>
+      ${c.phone?`<div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="color:var(--muted)">${t('phone')}</span>
+        <a href="tel:${esc(c.phone)}"><b>${esc(c.phone)}</b></a></div>`:''}
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">${t('status')}</span><b>${t(a.status)}</b></div>
+      ${a.notes?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);
+        font-size:13px;color:var(--muted)">${esc(a.notes)}</div>`:''}
+    </div>
+    ${open?`
+      ${a.status==='booked'||a.status==='confirmed'
+        ? `<button class="btn btn-2 btn-full" style="margin-bottom:9px" id="aGo">${t('start')}</button>`:''}
+      ${front?`<button class="btn btn-full" style="margin-bottom:9px" id="aPay">${t('finish')} · ${money(sum)}</button>`:''}
+      <button class="btn btn-ghost btn-full" id="aNo">${t('cancelAppt')}</button>
+    `:''}
+    <button class="btn-sm btn-ghost btn-full" style="margin-top:12px" id="aX">${t('cancel')}</button>`);
+
+  o.querySelector('#aX').onclick = closeSheet;
+  if(o.querySelector('#aGo')) o.querySelector('#aGo').onclick = async () => {
+    await sb.from('appointments').update({status:'in_progress'}).eq('id',a.id);
+    closeSheet(); render();
+  };
+  if(o.querySelector('#aNo')) o.querySelector('#aNo').onclick = async () => {
+    await sb.from('appointments').update({status:'cancelled'}).eq('id',a.id);
+    closeSheet(); toast(t('saved'),'ok'); render();
+  };
+  if(o.querySelector('#aPay')) o.querySelector('#aPay').onclick = () => { closeSheet(); payForm(a,c,items,sum); };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ١٣ ــ الفاتورة
+   ══════════════════════════════════════════════════════════ */
+function payForm(a,c,items,sum){
+  const o = sheet(`
+    <h3>${t('invoice')} — ${esc(c.full_name||'')}</h3>
+    <div class="card" style="margin-bottom:14px">
+      ${items.map(i=>`<div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span>${esc(nameOf(i.services||{}))}</span><b>${money(i.price_fils)}</b></div>`).join('')}
+      <div style="display:flex;justify-content:space-between;padding-top:9px;
+        border-top:1px solid var(--line);margin-top:6px">
+        <span style="color:var(--muted)">${t('subtotal')}</span><b>${money(sum)}</b></div>
+    </div>
+    <div class="field"><label>${t('discount')} (${t('kwd')})</label>
+      <input type="number" id="pDis" value="0" step="0.5" min="0" inputmode="decimal"></div>
+    <div class="field"><label>${t('payMethod')}</label>
+      <select id="pM"><option value="cash">${t('cash')}</option>
+        <option value="knet">${t('knet')}</option><option value="visa">${t('visa')}</option></select></div>
+    <div class="card" style="background:var(--navy);color:#fff;display:flex;
+      justify-content:space-between;align-items:center">
+      <span>${t('total')}</span><b style="font-size:22px" id="pT">${money(sum)}</b></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="pX">${t('cancel')}</button>
+      <button class="btn btn-2" id="pOk">${t('confirmPay')}</button>
+    </div>`);
+
+  const calc = () => Math.max(0, sum - Math.round((+o.querySelector('#pDis').value||0)*1000));
+  o.querySelector('#pDis').oninput = () => o.querySelector('#pT').textContent = money(calc());
+  o.querySelector('#pX').onclick = closeSheet;
+
+  o.querySelector('#pOk').onclick = async () => {
+    const btn=o.querySelector('#pOk'); btn.disabled=true;
+    const dis=Math.round((+o.querySelector('#pDis').value||0)*1000), tot=calc();
+    const stf=S.staff.find(s=>s.id===a.staff_id)||{commission_rate:0};
+
+    const { data:inv, error } = await sb.from('invoices').insert({
+      branch_id:S.me.branch_id, client_id:a.client_id, appointment_id:a.id,
+      subtotal_fils:sum, discount_fils:dis, total_fils:tot, paid_fils:tot,
+      status:'paid', created_by:S.me.id
+    }).select().single();
+    if(error){ btn.disabled=false; toast(error.message,'err'); return; }
+
+    await sb.from('invoice_items').insert(items.map(i=>({
+      invoice_id:inv.id, service_id:i.service_id,
+      description:nameOf(i.services||{}), staff_id:a.staff_id,
+      unit_price_fils:i.price_fils, line_total_fils:i.price_fils,
+      commission_rate:stf.commission_rate||0,
+      commission_fils:Math.round(i.price_fils*(stf.commission_rate||0)/100)
+    })));
+    await sb.from('payments').insert({
+      invoice_id:inv.id, amount_fils:tot,
+      method:o.querySelector('#pM').value, received_by:S.me.id
+    });
+    await sb.from('appointments').update({status:'completed'}).eq('id',a.id);
+
+    closeSheet(); toast(t('saved'),'ok'); render();
+  };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ١٤ ــ العميلات
+   ══════════════════════════════════════════════════════════ */
+async function vClients(q=''){
+  let req = sb.from('clients').select('*').eq('is_active',true).order('full_name').limit(300);
+  if(q) req = req.or(`full_name.ilike.%${q}%,phone.ilike.%${q}%`);
+  const { data } = await req;
+  S.clients = data||[];
+
+  $('#view').innerHTML = `
+    <div class="row-between">
+      <div class="page-title" style="margin:0">${t('nClients')}</div>
+      ${S.me.role!=='staff'?`<button class="btn btn-sm" id="cAdd">+ ${t('newClient')}</button>`:''}
+    </div>
+    <div class="field"><input id="cQ" placeholder="${t('search')}" value="${esc(q)}"></div>
+    ${S.clients.length ? `<div class="list">${S.clients.map(c=>`
+      <div class="item" data-id="${c.id}">
+        <div><div class="nm">${esc(c.full_name)}</div>
+        <div class="meta">${esc(c.phone||'—')}</div></div>
+        <span style="color:var(--muted)">›</span>
+      </div>`).join('')}</div>`
+    : `<div class="empty">${t('noClients')}</div>`}`;
+
+  let tm; $('#cQ').oninput = e => { clearTimeout(tm); tm=setTimeout(()=>vClients(e.target.value),350); };
+  if($('#cAdd')) $('#cAdd').onclick = () => clientForm();
+  document.querySelectorAll('.item[data-id]').forEach(el=>{
+    el.onclick = () => clientDetail(S.clients.find(c=>c.id===el.dataset.id));
+  });
+}
+
+function clientForm(){
+  const o = sheet(`
+    <h3>${t('newClient')}</h3>
+    <div class="field"><label>${t('name')} *</label><input id="nN"></div>
+    <div class="field"><label>${t('phone')}</label><input id="nP" inputmode="tel"></div>
+    <div class="field"><label>${t('allergies')}</label><input id="nA"></div>
+    <div class="field"><label>${t('notes')}</label><textarea id="nT" rows="2"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" id="nX">${t('cancel')}</button>
+      <button class="btn" id="nOk">${t('save')}</button>
+    </div>`);
+  o.querySelector('#nX').onclick = closeSheet;
+  o.querySelector('#nOk').onclick = async () => {
+    const nm=o.querySelector('#nN').value.trim();
+    if(!nm){ toast(t('required'),'err'); return; }
+    const btn=o.querySelector('#nOk'); btn.disabled=true;
+    const { error } = await sb.from('clients').insert({
+      branch_id:S.me.branch_id, full_name:nm,
+      phone:o.querySelector('#nP').value.trim()||null,
+      allergies:o.querySelector('#nA').value.trim()||null,
+      notes:o.querySelector('#nT').value.trim()||null,
+      created_by:S.me.id
+    });
+    if(error){ btn.disabled=false; toast(error.message,'err'); return; }
+    closeSheet(); toast(t('saved'),'ok');
+    S.clients=[]; if(S.tab==='clients') vClients();
+  };
+}
+
+async function clientDetail(c){
+  if(!c) return;
+  const { data:ap } = await sb.from('appointments')
+    .select('start_at,status, appointment_services(services(name_ar,name_en))')
+    .eq('client_id',c.id).order('start_at',{ascending:false}).limit(20);
+
+  sheet(`
+    <h3>${esc(c.full_name)}</h3>
+    <div class="card" style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="color:var(--muted)">${t('phone')}</span>
+        ${c.phone?`<a href="tel:${esc(c.phone)}"><b>${esc(c.phone)}</b></a>`:'<b>—</b>'}</div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="color:var(--muted)">${t('visits')}</span><b>${(ap||[]).length}</b></div>
+      ${c.allergies?`<div style="margin-top:10px;padding:9px 11px;background:#F7E9E8;
+        border-radius:10px;font-size:13px;color:var(--danger)">⚠ ${esc(c.allergies)}</div>`:''}
+      ${c.notes?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line);
+        font-size:13px;color:var(--muted)">${esc(c.notes)}</div>`:''}
+    </div>
+    <div style="font-weight:600;margin-bottom:9px">${t('visits')}</div>
+    ${(ap||[]).length?`<div class="list">${ap.map(a=>`
+      <div class="item"><div>
+        <div class="nm">${a.start_at.slice(0,10)}</div>
+        <div class="meta">${(a.appointment_services||[]).map(x=>esc(nameOf(x.services||{}))).join(' + ')}</div>
+      </div><span class="chip" style="background:var(--mint)">${t(a.status)}</span></div>`).join('')}</div>`
+    : `<div class="empty">${t('noAppt')}</div>`}
+    <button class="btn-sm btn-ghost btn-full" style="margin-top:14px"
+      onclick="document.querySelectorAll('.overlay').forEach(e=>e.remove())">${t('cancel')}</button>`);
+}
+
+/* ══════════════════════════════════════════════════════════
+   ١٥ ــ الحضور والبريك
+   ══════════════════════════════════════════════════════════ */
+async function vAtt(){
+  if(S.me.role==='staff') return attMe();
+  // المديرة والاستقبال: حضور الجميع + حضورهم
+  const { data:rows } = await sb.from('attendance')
+    .select('*, attendance_breaks(*)').eq('work_date',S.day);
+  const map={}; (rows||[]).forEach(r=>map[r.staff_id]=r);
+
+  $('#view').innerHTML = `
+    <div class="page-title">${t('attToday')} — ${S.day}</div>
+    <div class="list">${S.staff.map(s=>{
+      const r=map[s.id];
+      const brk=(r?.attendance_breaks||[]).find(b=>!b.break_end);
+      const state = !r||!r.check_in_at ? t('notIn')
+                  : r.check_out_at ? t('doneDay')
+                  : brk ? t('onBreak') : t('working');
+      const col = !r||!r.check_in_at ? 'var(--line)'
+                : r.check_out_at ? '#EDEDED' : brk ? '#FFF2D8' : 'var(--mint)';
+      return `<div class="item"><div>
+        <div class="nm">${esc(nameOf(s))}</div>
+        <div class="meta">${r?.check_in_at?hhmm(r.check_in_at):'—'}${r?.check_out_at?' → '+hhmm(r.check_out_at):''}</div>
+      </div><span class="chip" style="background:${col}">${state}</span></div>`;
+    }).join('')}</div>
+    <div style="margin-top:22px"></div>`;
+
+  const box=document.createElement('div'); $('#view').appendChild(box);
+  attMe(box);
+}
+
+async function attMe(container){
+  const { data:r } = await sb.from('attendance')
+    .select('*, attendance_breaks(*)').eq('staff_id',S.me.id).eq('work_date',S.day).maybeSingle();
+  const brk=(r?.attendance_breaks||[]).find(b=>!b.break_end);
+
+  let state, action, label, col;
+  if(!r || !r.check_in_at){ state=t('notIn'); action='in';  label=t('checkIn');   col=''; }
+  else if(r.check_out_at) { state=t('doneDay'); action=null; label='';            col=''; }
+  else if(brk)            { state=t('onBreak'); action='bend'; label=t('endBreak'); col='btn-2'; }
+  else                    { state=t('working'); action='bstart'; label=t('startBreak'); col='btn-2'; }
+
+  const worked = r?.check_in_at
+    ? Math.round(((r.check_out_at?new Date(r.check_out_at):new Date()) - new Date(r.check_in_at))/60000) : 0;
+  const brkMin = (r?.attendance_breaks||[]).reduce((s,b)=>
+    s + Math.round(((b.break_end?new Date(b.break_end):new Date()) - new Date(b.break_start))/60000), 0);
+
+  const html = `
+    ${container?'':`<div class="page-title">${t('nAtt')}</div>`}
+    <div class="att-big">
+      <div class="state">${state}</div>
+      <div class="clock">${String(Math.floor(worked/60)).padStart(2,'0')}:${String(worked%60).padStart(2,'0')}</div>
+      ${action?`<button class="btn ${col} btn-full" id="aBtn">${label}</button>`:''}
+      ${r?.check_in_at && !r.check_out_at
+        ? `<button class="btn btn-ghost btn-full" style="margin-top:9px" id="aOut">${t('checkOut')}</button>`:''}
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="lbl">${t('workedToday')}</div>
+        <div class="val">${(worked/60).toFixed(1)}</div></div>
+      <div class="stat"><div class="lbl">${t('breakToday')}</div>
+        <div class="val">${brkMin}</div></div>
+    </div>`;
+
+  (container || $('#view')).innerHTML = html;
+
+  const btn = (container||document).querySelector('#aBtn');
+  if(btn) btn.onclick = async () => {
+    btn.disabled=true;
+    if(action==='in'){
+      await sb.from('attendance').upsert({
+        branch_id:S.me.branch_id, staff_id:S.me.id,
+        work_date:S.day, check_in_at:new Date().toISOString()
+      },{onConflict:'staff_id,work_date'});
+    }
+    if(action==='bstart') await sb.from('attendance_breaks').insert({attendance_id:r.id});
+    if(action==='bend')   await sb.from('attendance_breaks')
+      .update({break_end:new Date().toISOString()}).eq('id',brk.id);
+    render();
+  };
+  const out = (container||document).querySelector('#aOut');
+  if(out) out.onclick = async () => {
+    out.disabled=true;
+    if(brk) await sb.from('attendance_breaks')
+      .update({break_end:new Date().toISOString()}).eq('id',brk.id);
+    await sb.from('attendance').update({check_out_at:new Date().toISOString()}).eq('id',r.id);
+    render();
+  };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ١٦ ــ المزيد (المديرة)
+   ══════════════════════════════════════════════════════════ */
+function vMore(){
+  $('#view').innerHTML = `
+    <div class="page-title">${t('services')}</div>
+    <div class="list" style="margin-bottom:24px">${S.services.map(s=>`
+      <div class="item"><div>
+        <div class="nm">${esc(nameOf(s))}</div>
+        <div class="meta">${s.duration_minutes} ${t('min')}</div>
+      </div><b>${money(s.price_fils)}</b></div>`).join('')}</div>
+
+    <div class="page-title">${t('team')}</div>
+    <div class="list">${S.staff.map(s=>`
+      <div class="item"><div>
+        <div class="nm">${esc(nameOf(s))}</div>
+        <div class="meta">${esc(s.job_title||'')}</div>
+      </div><span class="chip" style="background:${s.color||'var(--mint)'}">
+        ${s.commission_rate||0}%</span></div>`).join('')}</div>`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ١٧ ــ البدء
+   ══════════════════════════════════════════════════════════ */
+lang = store.getItem('lang') || 'ar';
+applyLang();
+boot();
+</script>
+</body>
+</html>
