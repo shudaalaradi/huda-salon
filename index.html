@@ -537,7 +537,7 @@ async function boot(){
   $('#hRole').textContent = t(me.role);
 
   const [st,sv,an] = await Promise.all([
-    sb.from('profiles').select('*').eq('role','staff').eq('is_active',true).order('full_name_ar'),
+    sb.from('profiles').select('*').in('role',['staff','receptionist']).eq('is_active',true).order('full_name_ar'),
     sb.from('services').select('*, service_categories(name_ar,name_en)').eq('is_active',true).order('name_ar'),
     sb.from('announcements').select('*').eq('is_active',true).order('created_at',{ascending:false}).limit(1),
   ]);
@@ -547,7 +547,7 @@ async function boot(){
 
   await refreshCounts();
 
-  S.tab = me.role==='owner' ? 'dash' : (me.role==='staff' ? 'att' : 'cal');
+  S.tab = me.role==='owner' ? 'dash' : 'att';
   buildNav(); render();
 }
 
@@ -563,7 +563,7 @@ async function refreshCounts(){
       ]);
       S.counts.req = (p.count||0)+(l.count||0);
       S.counts.msg = m.count||0;
-    } else if(S.me.role==='staff'){
+    } else {
       const m = await sb.from('messages').select('id',{count:'exact',head:true})
         .eq('staff_id',S.me.id).eq('read_by_staff',false).neq('sender_id',S.me.id);
       S.counts.msg = m.count||0;
@@ -593,7 +593,8 @@ function buildNav(){
     tabs=[['dash','nDash','dash'],['cal','nCal','cal'],['clients','nClients','cli'],
           ['att','nAtt','att'],['more','nMore','more',S.counts.req+S.counts.msg]];
   else if(r==='receptionist')
-    tabs=[['cal','nCal','cal'],['clients','nClients','cli'],['att','nAtt','att']];
+    tabs=[['att','nAtt','att'],['cal','nCal','cal'],['clients','nClients','cli'],
+          ['pay','nPay','pay'],['req','nReq','req'],['msg','nMsg','msg',S.counts.msg]];
   else
     tabs=[['att','nAtt','att'],['cal','nMyCal','cal'],['pay','nPay','pay'],
           ['req','nReq','req'],['msg','nMsg','msg',S.counts.msg]];
@@ -666,7 +667,8 @@ async function vDash(){
    ══════════════════════════════════════════════════════════ */
 async function vCal(){
   const isStaff = S.me.role==='staff';
-  const cols = isStaff ? S.staff.filter(s=>s.id===S.me.id) : S.staff;
+  const cols = isStaff ? S.staff.filter(s=>s.id===S.me.id)
+                       : S.staff.filter(s=>s.role==='staff');
 
   let q = sb.from('appointments')
     .select('*, appointment_services(service_id, price_fils, services(name_ar,name_en))')
@@ -767,7 +769,7 @@ async function apptForm(pre={}){
       </select></div>
     <div class="field"><label>${t('staffM')} *</label>
       <select id="fSt"><option value="">${t('pick')}</option>
-        ${S.staff.map(s=>`<option value="${s.id}" ${pre.staff===s.id?'selected':''}>${esc(nameOf(s))}</option>`).join('')}
+        ${S.staff.filter(s=>s.role==='staff').map(s=>`<option value="${s.id}" ${pre.staff===s.id?'selected':''}>${esc(nameOf(s))}</option>`).join('')}
       </select></div>
     <div class="field"><label>${t('date')}</label><input type="date" id="fD" value="${S.day}"></div>
     <div class="field"><label>${t('time')}</label><input type="time" id="fT" value="${pre.time||'11:00'}" step="900"></div>
@@ -1039,7 +1041,7 @@ function annBanner(){
 }
 
 async function vAtt(){
-  if(S.me.role==='staff') return attMe();
+  if(S.me.role!=='owner') return attMe();
   const { data:rows } = await sb.from('attendance')
     .select('*, attendance_breaks(*)').eq('work_date',S.day);
   const map={}; (rows||[]).forEach(r=>map[r.staff_id]=r);
@@ -1297,7 +1299,7 @@ async function openThread(staffId, isSelf){
     $('#ms').disabled=true;
     const { error } = await sb.from('messages').insert({
       staff_id:staffId, sender_id:S.me.id, body,
-      read_by_owner:S.me.role==='owner', read_by_staff:S.me.role==='staff'
+      read_by_owner:S.me.role==='owner', read_by_staff:S.me.role!=='owner'
     });
     if(error){ $('#ms').disabled=false; toast(error.message,'err'); return; }
     ta.value=''; await refreshCounts(); buildNav();
@@ -1657,7 +1659,7 @@ function vTeam(){
     <div class="list">${S.staff.map(s=>`
       <div class="item"><div>
         <div class="nm">${esc(nameOf(s))}</div>
-        <div class="meta">${esc(s.job_title||'')}</div>
+        <div class="meta">${esc(s.job_title||'')} · ${t(s.role)}</div>
       </div><span class="chip" style="background:${s.color||'var(--mint)'}">
         ${s.commission_rate||0}%</span></div>`).join('')}</div>`;
 }
