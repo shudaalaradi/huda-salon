@@ -263,6 +263,11 @@ ar:{
  sumErr:'مجموع الحصص لازم ١٠٠٪',
  categories:'التصنيفات', newCat:'تصنيف جديد', catKind:'النوع',
  alerts:'تنبيهات', kwd:'د.ك', month:'الشهر',
+ fixed:'المصاريف الثابتة', newFixed:'مصروف ثابت جديد', fixedName:'اسم المصروف',
+ dueDay:'يوم الاستحقاق', monthlyCommitments:'التزامات الشهر', paidThisMonth:'المدفوع هذا الشهر',
+ remainingThisMonth:'المتبقي هذا الشهر', payNow:'دفع الآن', partial:'دفع جزئي',
+ unpaid:'غير مدفوع', fullyPaid:'مدفوع بالكامل', fixedExpense:'مصروف ثابت',
+ availableAfterCommitments:'المتاح بعد الالتزامات', salaryRemaining:'المتبقي من الراتب',
  errLogin:'بيانات الدخول غير صحيحة', noAccess:'هذا النظام للمديرات فقط',
  from:'من', to:'إلى', total:'الإجمالي', count:'العدد',
 },
@@ -313,6 +318,11 @@ en:{
  sumErr:'Shares must total 100%',
  categories:'Categories', newCat:'New category', catKind:'Type',
  alerts:'Alerts', kwd:'KWD', month:'Month',
+ fixed:'Fixed expenses', newFixed:'New fixed expense', fixedName:'Expense name',
+ dueDay:'Due day', monthlyCommitments:'Monthly commitments', paidThisMonth:'Paid this month',
+ remainingThisMonth:'Remaining this month', payNow:'Pay now', partial:'Partial payment',
+ unpaid:'Unpaid', fullyPaid:'Fully paid', fixedExpense:'Fixed expense',
+ availableAfterCommitments:'Available after commitments', salaryRemaining:'Salary remaining',
  errLogin:'Wrong email or password', noAccess:'Owners only',
  from:'From', to:'To', total:'Total', count:'Count',
 }};
@@ -421,11 +431,12 @@ const IC={
  rep:'<path d="M5 20V10M12 20V4M19 20v-7"/>',
  part:'<circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9" r="2.6"/><path d="M3 20c0-3.3 2.7-5 6-5s6 1.7 6 5"/><path d="M17 14c2.5 0 4 1.5 4 4"/>',
  tag:'<path d="M3 11V4h7l10 10-7 7z"/><circle cx="7.5" cy="7.5" r="1.2"/>',
+ bill:'<path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/>',
 };
 function buildNav(){
   const tabs=[['home','nHome','home'],['moves','nMoves','mov'],['accounts','nAcc','acc'],
               ['debts','nDebt','debt',S.alerts],['more','nMore','more']];
-  const grp={suppliers:'more',employees:'more',stock:'more',health:'more',
+  const grp={suppliers:'more',employees:'more',stock:'more',health:'more',fixed:'more',
              reports:'more',partners:'more',cats:'more',statement:'accounts'};
   const cur=grp[S.tab]||S.tab;
   $('#nav').innerHTML=tabs.map(([id,l,i,n])=>`
@@ -443,20 +454,35 @@ function back(title,to){return `<div class="row-between">
 function render(){
   $('#view').innerHTML='<div class="spin"></div>';
   ({home:vHome,moves:vMoves,accounts:vAccounts,debts:vDebts,more:vMore,
-    suppliers:vSuppliers,employees:vEmployees,stock:vStock,health:vHealth,
+    suppliers:vSuppliers,employees:vEmployees,stock:vStock,health:vHealth,fixed:vFixed,
     reports:vReports,partners:vPartners,cats:vCats,statement:vStatement}[S.tab]||vHome)();
 }
 </script>
 <script>
 /* ══════════ الرئيسية ══════════ */
 async function vHome(){
-  const[{data:sum},{data:last}]=await Promise.all([
+  const monthStart=S.ym+'-01', monthEnd=S.ym+'-31';
+  const[{data:sum},{data:last},{data:fixed},{data:fixedPaid},{data:salaryPaid}]=await Promise.all([
     sb.rpc('fin_summary',{p_ym:S.ym}),
     sb.from('fin_entries').select('*,fin_categories(name_ar,name_en),fin_partners(name_ar,name_en),fin_accounts!fin_entries_account_id_fkey(name_ar,name_en)')
       .order('entry_date',{ascending:false}).order('created_at',{ascending:false}).limit(8),
+    sb.from('fin_recurring_expenses').select('*').eq('is_active',true).eq('frequency','monthly').order('due_day'),
+    sb.from('fin_recurring_payments').select('recurring_id,amount_fils').gte('pay_date',monthStart).lte('pay_date',monthEnd),
+    sb.from('fin_entries').select('employee_id,amount_fils').eq('kind','expense').not('employee_id','is',null)
+      .gte('entry_date',monthStart).lte('entry_date',monthEnd),
   ]);
   const s=(sum||[])[0]||{};
   const pf=+(s.profit_fils||0);
+  const fpaid={};(fixedPaid||[]).forEach(p=>fpaid[p.recurring_id]=(fpaid[p.recurring_id]||0)+(+p.amount_fils||0));
+  const fixedDue=(fixed||[]).reduce((z,x)=>z+(+x.amount_fils||0),0);
+  const fixedDone=Object.values(fpaid).reduce((a,b)=>a+b,0);
+  const salaryDone={};(salaryPaid||[]).forEach(p=>salaryDone[p.employee_id]=(salaryDone[p.employee_id]||0)+(+p.amount_fils||0));
+  const salaryDue=S.emps.reduce((z,e)=>z+(+e.salary_fils||0),0);
+  const salaryPaidTotal=Object.values(salaryDone).reduce((a,b)=>a+b,0);
+  const commitmentDue=fixedDue+salaryDue;
+  const commitmentPaid=Math.min(fixedDone,fixedDue)+Math.min(salaryPaidTotal,salaryDue);
+  const commitmentRem=Math.max(0,commitmentDue-commitmentPaid);
+  const afterCommit=(+s.total_fils||0)-commitmentRem;
 
   $('#view').innerHTML=`
     <div class="field no-print"><input type="month" id="ym" value="${S.ym}"></div>
@@ -475,6 +501,20 @@ async function vHome(){
       <div class="tile"><div class="lbl">${t('monthExpense')}</div>
         <div class="val dn num">${money(s.expense_fils||0)}</div></div>
     </div>
+
+    <div class="card" style="margin-bottom:14px;cursor:pointer" onclick="go('fixed')">
+      <div class="row-between"><b>${t('monthlyCommitments')}</b><span>›</span></div>
+      <div class="stats" style="margin-top:10px">
+        <div class="stat"><div class="lbl">${t('total')}</div><div class="val num">${money(commitmentDue)}</div></div>
+        <div class="stat"><div class="lbl">${t('remainingThisMonth')}</div><div class="val dn num">${money(commitmentRem)}</div></div>
+      </div>
+    </div>
+    <div class="big ${afterCommit<0?'neg':''}" style="background:${afterCommit<0?'#3A2422':'#24342B'}">
+      <div class="lbl">${t('availableAfterCommitments')}</div>
+      <div class="val num">${money(afterCommit)}</div>
+      <div class="sub">${S.ym}</div>
+    </div>
+
     <div class="big ${pf<0?'neg':''}" style="background:${pf<0?'#3A2422':'#1E3326'}">
       <div class="lbl">${pf<0?t('loss'):t('profit')}</div>
       <div class="val num">${money(Math.abs(pf))}</div>
@@ -718,20 +758,27 @@ function accForm(ex){
         <input id="aL" maxlength="4" inputmode="numeric"></div>
     </div>
     <div class="field"><label>${t('opening')} (${t('kwd')})</label>
-      <input type="number" id="aO" step="0.001" value="0" inputmode="decimal"></div>
+      <input type="number" id="aO" step="0.001" value="${ex?(+(ex.opening_fils||0)/1000):0}" inputmode="decimal" ${ex?'disabled':''}></div>
     <div class="sheet-actions">
       <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
       <button class="btn" id="aOk">${t('save')}</button></div>`);
+  if(ex){
+    o.querySelector('#aK').value=ex.kind||'bank';
+    o.querySelector('#aB').value=ex.bank_name||'';
+    o.querySelector('#aL').value=ex.last4||'';
+  }
   o.querySelector('#aOk').onclick=async()=>{
     const n=o.querySelector('#aN').value.trim();
     if(!n){toast(t('required'),'err');return}
     const b=o.querySelector('#aOk');b.disabled=true;
-    const{error}=await sb.from('fin_accounts').insert({
-      name_ar:n,kind:o.querySelector('#aK').value,
+    const body={name_ar:n,kind:o.querySelector('#aK').value,
       bank_name:o.querySelector('#aB').value.trim()||null,
-      last4:o.querySelector('#aL').value.trim()||null,
-      opening_fils:Math.round((+o.querySelector('#aO').value||0)*1000),
-      sort_order:S.accs.length+1});
+      last4:o.querySelector('#aL').value.trim()||null};
+    if(!ex) body.opening_fils=Math.round((+o.querySelector('#aO').value||0)*1000);
+    if(!ex) body.sort_order=S.accs.length+1;
+    const{error}=ex
+      ?await sb.from('fin_accounts').update(body).eq('id',ex.id||ex.account_id)
+      :await sb.from('fin_accounts').insert(body);
     if(error){b.disabled=false;toast(error.message,'err');return}
     closeSheet();toast(t('saved'),'ok');await loadRefs();render()};
 }
@@ -846,21 +893,19 @@ function debtDetail(d){
 
   if(o.querySelector('#sOk'))o.querySelector('#sOk').onclick=async()=>{
     const v=Math.round((+o.querySelector('#sA').value||0)*1000);
-    if(!v)return;
+    if(!v||v<1){toast(t('required'),'err');return}
+    if(v>rem){toast((lang==='ar'?'المبلغ أكبر من المتبقي':'Amount exceeds remaining balance'),'err');return}
     const acc=o.querySelector('#sAcc').value;
-    const paid=Math.min(d.amount_fils,d.paid_fils+v);
-    const done=paid>=d.amount_fils;
-    await sb.from('fin_debts').update({paid_fils:paid,is_settled:done,
-      settled_at:done?new Date().toISOString():null}).eq('id',d.id);
-    // حركة مالية مقابلة
-    await sb.from('fin_entries').insert({
-      entry_date:today(),kind:d.direction==='payable'?'expense':'income',
-      amount_fils:v,account_id:acc,created_by:S.me.id,
-      note:(d.direction==='payable'?'سداد':'تحصيل')+' — '+d.person});
+    const b=o.querySelector('#sOk');b.disabled=true;
+    const{error}=await sb.rpc('fin_settle_debt_atomic',{
+      p_debt_id:d.id,p_amount_fils:v,p_account_id:acc,p_pay_date:today()
+    });
+    if(error){b.disabled=false;toast(error.message,'err');return}
     closeSheet();toast(t('saved'),'ok');await loadRefs();await countAlerts();buildNav();render()};
   o.querySelector('#sDel').onclick=async()=>{
     if(!confirm(t('delQ')))return;
-    await sb.from('fin_debts').delete().eq('id',d.id);
+    const{error}=await sb.from('fin_debts').delete().eq('id',d.id);
+    if(error){toast(error.message,'err');return}
     closeSheet();toast(t('deleted'),'ok');await countAlerts();buildNav();render()};
 }
 
@@ -871,7 +916,7 @@ function vMore(){
   $('#view').innerHTML=`<div class="page-title">${t('nMore')}</div>
     <div class="menu-grid">
       ${c('health','health','heart')}${c('reports','reports','rep')}
-      ${c('suppliers','suppliers','sup')}${c('employees','employees','emp')}
+      ${c('fixed','fixed','bill')}${c('suppliers','suppliers','sup')}${c('employees','employees','emp')}
       ${c('stock','stock','box')}${c('partners','partners','part')}
       ${c('cats','categories','tag')}
     </div>`;
@@ -917,6 +962,109 @@ async function vHealth(){
     </div>`;
 }
 
+
+/* ══════════ المصاريف الثابتة ══════════ */
+async function vFixed(){
+  const monthStart=S.ym+'-01', monthEnd=S.ym+'-31';
+  const[{data:rows,error:e1},{data:pays,error:e2}]=await Promise.all([
+    sb.from('fin_recurring_expenses').select('*').eq('is_active',true).eq('frequency','monthly').order('due_day'),
+    sb.from('fin_recurring_payments').select('*').gte('pay_date',monthStart).lte('pay_date',monthEnd)
+  ]);
+  if(e1||e2){toast((e1||e2).message,'err');return}
+  const paid={};(pays||[]).forEach(p=>paid[p.recurring_id]=(paid[p.recurring_id]||0)+(+p.amount_fils||0));
+  const total=(rows||[]).reduce((s,r)=>s+(+r.amount_fils||0),0);
+  const paidTotal=(rows||[]).reduce((s,r)=>s+Math.min(+r.amount_fils||0,paid[r.id]||0),0);
+  const rem=Math.max(0,total-paidTotal);
+  $('#view').innerHTML=`
+    ${back(t('fixed'),'more')}
+    <div class="field no-print"><input type="month" id="ym" value="${S.ym}"></div>
+    <div class="stats">
+      <div class="stat"><div class="lbl">${t('total')}</div><div class="val num">${money(total)}</div></div>
+      <div class="stat"><div class="lbl">${t('paidThisMonth')}</div><div class="val up num">${money(paidTotal)}</div></div>
+      <div class="stat"><div class="lbl">${t('remainingThisMonth')}</div><div class="val dn num">${money(rem)}</div></div>
+    </div>
+    <button class="btn btn-full no-print" style="margin-bottom:14px" id="fxAdd">+ ${t('newFixed')}</button>
+    ${(rows||[]).length?`<div class="list">${rows.map(r=>{
+      const p=paid[r.id]||0, rr=Math.max(0,(+r.amount_fils||0)-p), full=rr===0;
+      return `<div class="item" data-fx="${r.id}">
+        <div><div class="nm">${esc(r.name)}</div>
+          <div class="meta">${t('dueDay')}: ${r.due_day||1} · ${t('paidThisMonth')}: ${money(p)}</div></div>
+        <div style="text-align:end">
+          <div class="amt num">${money(r.amount_fils)}</div>
+          <div class="meta">${t('remaining')}: ${money(rr)}</div>
+          <button class="btn-sm ${full?'btn-ghost':'btn-2'} no-print" data-fxpay="${r.id}" ${full?'disabled':''}>${full?t('fullyPaid'):t('payNow')}</button>
+        </div></div>`}).join('')}</div>`:`<div class="empty">${t('noMoves')}</div>`}`;
+  $('#ym').onchange=e=>{S.ym=e.target.value;render()};
+  $('#fxAdd').onclick=()=>fixedForm();
+  $$('.item[data-fx]').forEach(el=>el.onclick=e=>{
+    if(e.target.closest('[data-fxpay]'))return;
+    fixedForm((rows||[]).find(x=>x.id===el.dataset.fx));
+  });
+  $$('[data-fxpay]').forEach(btn=>btn.onclick=e=>{
+    e.stopPropagation();
+    const r=(rows||[]).find(x=>x.id===btn.dataset.fx);
+    payFixed(r,paid[r.id]||0);
+  });
+}
+
+function fixedForm(ex){
+  const o=sheet(`<h3>${ex?t('edit'):t('newFixed')}</h3>
+    <div class="field"><label>${t('fixedName')} *</label><input id="fxN" value="${ex?esc(ex.name):''}"></div>
+    <div class="f2">
+      <div class="field"><label>${t('amount')} (${t('kwd')}) *</label>
+        <input type="number" id="fxA" step="0.001" min="0" value="${ex?(ex.amount_fils/1000):''}"></div>
+      <div class="field"><label>${t('dueDay')}</label>
+        <input type="number" id="fxD" min="1" max="31" step="1" value="${ex?ex.due_day:1}"></div>
+    </div>
+    <div class="field"><label>${t('note')}</label><textarea id="fxT" rows="2">${ex?esc(ex.note||''):''}</textarea></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+      <button class="btn" id="fxOk">${t('save')}</button></div>
+    ${ex?`<button class="btn btn-danger btn-full" style="margin-top:9px" id="fxDel">${t('del')}</button>`:''}`);
+  o.querySelector('#fxOk').onclick=async()=>{
+    const n=o.querySelector('#fxN').value.trim(), a=Math.round((+o.querySelector('#fxA').value||0)*1000);
+    const d=Math.min(31,Math.max(1,+o.querySelector('#fxD').value||1));
+    if(!n||!a){toast(t('required'),'err');return}
+    const body={name:n,amount_fils:a,due_day:d,frequency:'monthly',note:o.querySelector('#fxT').value.trim()||null};
+    const{error}=ex?await sb.from('fin_recurring_expenses').update(body).eq('id',ex.id)
+                   :await sb.from('fin_recurring_expenses').insert({...body,created_by:S.me.id});
+    if(error){toast(error.message,'err');return}
+    closeSheet();toast(t('saved'),'ok');render()};
+  if(ex&&o.querySelector('#fxDel'))o.querySelector('#fxDel').onclick=async()=>{
+    if(!confirm(t('delQ')))return;
+    const{error}=await sb.from('fin_recurring_expenses').update({is_active:false}).eq('id',ex.id);
+    if(error){toast(error.message,'err');return}
+    closeSheet();render()};
+}
+
+function payFixed(r,alreadyPaid){
+  const rem=Math.max(0,(+r.amount_fils||0)-alreadyPaid);
+  if(!rem){toast(t('fullyPaid'),'ok');return}
+  const o=sheet(`<h3>${t('payNow')} — ${esc(r.name)}</h3>
+    <div class="card" style="margin-bottom:12px">
+      <div class="pay-row"><span>${t('amount')}</span><b class="num">${money(r.amount_fils)}</b></div>
+      <div class="pay-row"><span>${t('paidThisMonth')}</span><b class="num">${money(alreadyPaid)}</b></div>
+      <div class="pay-row"><span>${t('remaining')}</span><b class="num">${money(rem)}</b></div>
+    </div>
+    <div class="field"><label>${t('payAmount')} (${t('kwd')})</label>
+      <input type="number" id="fpA" min="0.001" step="0.001" value="${(rem/1000).toFixed(3)}"></div>
+    <div class="field"><label>${t('account')}</label>
+      <select id="fpAcc">${S.accs.map(a=>`<option value="${a.account_id}">${esc(nm(a))}</option>`).join('')}</select></div>
+    <div class="field"><label>${t('date')}</label><input type="date" id="fpD" value="${today()}"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+      <button class="btn btn-2" id="fpOk">${t('save')}</button></div>`);
+  o.querySelector('#fpOk').onclick=async()=>{
+    const v=Math.round((+o.querySelector('#fpA').value||0)*1000);
+    if(!v||v>rem){toast(v>rem?(lang==='ar'?'المبلغ أكبر من المتبقي':'Amount exceeds remaining balance'):t('required'),'err');return}
+    const b=o.querySelector('#fpOk');b.disabled=true;
+    const{error}=await sb.rpc('fin_pay_recurring_atomic',{
+      p_recurring_id:r.id,p_amount_fils:v,p_account_id:o.querySelector('#fpAcc').value,p_pay_date:o.querySelector('#fpD').value
+    });
+    if(error){b.disabled=false;toast(error.message,'err');return}
+    closeSheet();toast(t('saved'),'ok');await loadRefs();render()};
+}
+
 /* ══════════ الموردون ══════════ */
 async function vSuppliers(){
   const{data:buys}=await sb.from('fin_entries').select('supplier_id,amount_fils')
@@ -942,10 +1090,11 @@ async function vSuppliers(){
     o.querySelector('#uOk').onclick=async()=>{
       const n=o.querySelector('#uN').value.trim();
       if(!n){toast(t('required'),'err');return}
-      await sb.from('fin_suppliers').insert({name:n,
+      const{error}=await sb.from('fin_suppliers').insert({name:n,
         phone:o.querySelector('#uP').value.trim()||null,
         contact:o.querySelector('#uC').value.trim()||null,
         note:o.querySelector('#uT').value.trim()||null});
+      if(error){toast(error.message,'err');return}
       closeSheet();toast(t('saved'),'ok');await loadRefs();render()};
   };
   $$('.item[data-s]').forEach(el=>el.onclick=()=>supDetail(
@@ -976,43 +1125,53 @@ async function supDetail(s,tot){
 
 /* ══════════ الرواتب ══════════ */
 async function vEmployees(){
-  const{data:paid}=await sb.from('fin_entries').select('employee_id,amount_fils')
+  const monthStart=S.ym+'-01',monthEnd=S.ym+'-31';
+  const{data:paid,error:paidErr}=await sb.from('fin_entries').select('employee_id,amount_fils')
     .eq('kind','expense').not('employee_id','is',null)
-    .gte('entry_date',S.ym+'-01').lte('entry_date',S.ym+'-31');
-  const done={};(paid||[]).forEach(p=>done[p.employee_id]=(done[p.employee_id]||0)+p.amount_fils);
+    .gte('entry_date',monthStart).lte('entry_date',monthEnd);
+  if(paidErr){toast(paidErr.message,'err');return}
+  const done={};(paid||[]).forEach(p=>done[p.employee_id]=(done[p.employee_id]||0)+(+p.amount_fils||0));
   const totS=S.emps.reduce((s,e)=>s+ +e.salary_fils,0);
   const totP=Object.values(done).reduce((a,b)=>a+b,0);
+  const totR=S.emps.reduce((s,e)=>s+Math.max(0,(+e.salary_fils||0)-(done[e.id]||0)),0);
 
   $('#view').innerHTML=`
     ${back(t('employees'),'more')}
     <div class="field no-print"><input type="month" id="ym" value="${S.ym}"></div>
-    <div class="grid2">
-      <div class="tile"><div class="lbl">${t('monthSalaries')}</div>
-        <div class="val num">${money(totS)}</div></div>
-      <div class="tile"><div class="lbl">${t('paid')}</div>
-        <div class="val up num">${money(totP)}</div></div>
+    <div class="stats">
+      <div class="stat"><div class="lbl">${t('monthSalaries')}</div><div class="val num">${money(totS)}</div></div>
+      <div class="stat"><div class="lbl">${t('paidThisMonth')}</div><div class="val up num">${money(totP)}</div></div>
+      <div class="stat"><div class="lbl">${t('remainingThisMonth')}</div><div class="val dn num">${money(totR)}</div></div>
     </div>
     <button class="btn btn-full no-print" style="margin-bottom:9px" id="eAdd">+ ${t('newEmployee')}</button>
     <button class="btn btn-2 btn-full no-print" style="margin-bottom:14px" id="payAll">${t('payAll')}</button>
-    ${S.emps.length?`<div class="list">${S.emps.map(e=>`
-      <div class="item" data-e2="${e.id}"><div><div class="nm">${esc(e.name)}</div>
-        <div class="meta">${esc(e.position||'—')}</div></div>
-      <div style="text-align:end"><div class="amt num">${money(e.salary_fils)}</div>
-        <span class="chip ${done[e.id]?'ok':'warn'}">${done[e.id]?t('paid'):t('notPaid')}</span></div>
-      </div>`).join('')}</div>`:`<div class="empty">${t('noEmployees')}</div>`}`;
+    ${S.emps.length?`<div class="list">${S.emps.map(e=>{
+      const p=done[e.id]||0, rem=Math.max(0,(+e.salary_fils||0)-p), full=rem===0;
+      return `<div class="item" data-e2="${e.id}">
+        <div><div class="nm">${esc(e.name)}</div>
+          <div class="meta">${esc(e.position||'—')} · ${t('paidThisMonth')}: ${money(p)}</div></div>
+        <div style="text-align:end">
+          <div class="amt num">${money(e.salary_fils)}</div>
+          <div class="meta">${t('salaryRemaining')}: ${money(rem)}</div>
+          <button class="btn-sm ${full?'btn-ghost':'btn-2'} no-print" data-payemp="${e.id}" ${full?'disabled':''}>${full?t('fullyPaid'):t('payNow')}</button>
+        </div></div>`}).join('')}</div>`:`<div class="empty">${t('noEmployees')}</div>`}`;
 
   $('#ym').onchange=e=>{S.ym=e.target.value;render()};
   $('#eAdd').onclick=()=>empForm();
-  $$('.item[data-e2]').forEach(el=>el.onclick=()=>empForm(S.emps.find(x=>x.id===el.dataset.e2)));
+  $$('.item[data-e2]').forEach(el=>el.onclick=e=>{if(e.target.closest('[data-payemp]'))return;empForm(S.emps.find(x=>x.id===el.dataset.e2))});
+  $$('[data-payemp]').forEach(btn=>btn.onclick=e=>{
+    e.stopPropagation();
+    const emp=S.emps.find(x=>x.id===btn.dataset.payemp);
+    payEmployee(emp,done[emp.id]||0);
+  });
   $('#payAll').onclick=()=>{
-    const un=S.emps.filter(e=>!done[e.id]&&+e.salary_fils>0);
+    const un=S.emps.map(e=>({e,rem:Math.max(0,(+e.salary_fils||0)-(done[e.id]||0))})).filter(x=>x.rem>0);
     if(!un.length){toast(t('paid'),'ok');return}
     const o=sheet(`<h3>${t('payAll')}</h3>
       <div class="card" style="margin-bottom:14px">
-        ${un.map(e=>`<div class="pay-row"><span>${esc(e.name)}</span>
-          <b class="num">${money(e.salary_fils)}</b></div>`).join('')}
+        ${un.map(x=>`<div class="pay-row"><span>${esc(x.e.name)}</span><b class="num">${money(x.rem)}</b></div>`).join('')}
         <div class="pay-row"><span class="lb">${t('total')}</span>
-          <b class="num">${money(un.reduce((s,e)=>s+ +e.salary_fils,0))}</b></div></div>
+          <b class="num">${money(un.reduce((s,x)=>s+x.rem,0))}</b></div></div>
       <div class="field"><label>${t('account')}</label>
         <select id="pAcc">${S.accs.map(a=>`<option value="${a.account_id}">${esc(nm(a))}</option>`).join('')}</select></div>
       <div class="sheet-actions">
@@ -1022,12 +1181,43 @@ async function vEmployees(){
       const b=o.querySelector('#pOk');b.disabled=true;
       const acc=o.querySelector('#pAcc').value;
       const cat=S.cats.find(c=>c.kind==='expense'&&(c.name_ar==='رواتب'));
-      await sb.from('fin_entries').insert(un.map(e=>({
-        entry_date:S.ym+'-28',kind:'expense',amount_fils:+e.salary_fils,
-        account_id:acc,category_id:cat?cat.id:null,employee_id:e.id,
-        note:'راتب '+e.name+' — '+S.ym,created_by:S.me.id})));
+      const{error}=await sb.from('fin_entries').insert(un.map(x=>({
+        entry_date:S.ym+'-28',kind:'expense',amount_fils:x.rem,
+        account_id:acc,category_id:cat?cat.id:null,employee_id:x.e.id,
+        note:'راتب '+x.e.name+' — '+S.ym,created_by:S.me.id})));
+      if(error){b.disabled=false;toast(error.message,'err');return}
       closeSheet();toast(t('saved'),'ok');await loadRefs();render()};
   };
+}
+
+function payEmployee(emp,alreadyPaid){
+  const rem=Math.max(0,(+emp.salary_fils||0)-alreadyPaid);
+  if(!rem){toast(t('fullyPaid'),'ok');return}
+  const o=sheet(`<h3>${t('payNow')} — ${esc(emp.name)}</h3>
+    <div class="card" style="margin-bottom:12px">
+      <div class="pay-row"><span>${t('salary')}</span><b class="num">${money(emp.salary_fils)}</b></div>
+      <div class="pay-row"><span>${t('paidThisMonth')}</span><b class="num">${money(alreadyPaid)}</b></div>
+      <div class="pay-row"><span>${t('remaining')}</span><b class="num">${money(rem)}</b></div>
+    </div>
+    <div class="field"><label>${t('payAmount')} (${t('kwd')})</label>
+      <input type="number" id="epA" min="0.001" step="0.001" value="${(rem/1000).toFixed(3)}"></div>
+    <div class="field"><label>${t('account')}</label>
+      <select id="epAcc">${S.accs.map(a=>`<option value="${a.account_id}">${esc(nm(a))}</option>`).join('')}</select></div>
+    <div class="field"><label>${t('date')}</label><input type="date" id="epD" value="${today()}"></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+      <button class="btn btn-2" id="epOk">${t('save')}</button></div>`);
+  o.querySelector('#epOk').onclick=async()=>{
+    const v=Math.round((+o.querySelector('#epA').value||0)*1000);
+    if(!v||v>rem){toast(v>rem?(lang==='ar'?'المبلغ أكبر من المتبقي':'Amount exceeds remaining balance'):t('required'),'err');return}
+    const b=o.querySelector('#epOk');b.disabled=true;
+    const cat=S.cats.find(c=>c.kind==='expense'&&(c.name_ar==='رواتب'));
+    const{error}=await sb.from('fin_entries').insert({
+      entry_date:o.querySelector('#epD').value,kind:'expense',amount_fils:v,
+      account_id:o.querySelector('#epAcc').value,category_id:cat?cat.id:null,employee_id:emp.id,
+      note:'راتب '+emp.name+' — '+S.ym,created_by:S.me.id});
+    if(error){b.disabled=false;toast(error.message,'err');return}
+    closeSheet();toast(t('saved'),'ok');await loadRefs();render()};
 }
 
 function empForm(ex){
@@ -1154,9 +1344,10 @@ async function prodDetail(p){
     o2.querySelector('#qOk').onclick=async()=>{
       const q=+o2.querySelector('#qN').value||0;
       if(!q){toast(t('required'),'err');return}
-      await sb.from('fin_stock_moves').insert({product_id:p.id,direction:dir,qty:q,
+      const{error}=await sb.from('fin_stock_moves').insert({product_id:p.id,direction:dir,qty:q,
         move_date:o2.querySelector('#qD').value,
         note:o2.querySelector('#qT').value.trim()||null,created_by:S.me.id});
+      if(error){toast(error.message,'err');return}
       closeSheet();toast(t('saved'),'ok');await countAlerts();buildNav();render()};
   });
 }
