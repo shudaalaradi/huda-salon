@@ -461,7 +461,7 @@ function render(){
 <script>
 /* ══════════ الرئيسية ══════════ */
 async function vHome(){
-  const monthStart=S.ym+'-01', monthEnd=S.ym+'-31';
+  const monthStart=S.ym+'-01', monthEnd=monthEnd(S.ym);
   const[{data:sum},{data:last},{data:fixed},{data:fixedPaid},{data:salaryPaid}]=await Promise.all([
     sb.rpc('fin_summary',{p_ym:S.ym}),
     sb.from('fin_entries').select('*,fin_categories(name_ar,name_en),fin_partners(name_ar,name_en),fin_accounts!fin_entries_account_id_fkey(name_ar,name_en)')
@@ -674,7 +674,7 @@ function entryDetail(e){
 async function vMoves(){
   let q=sb.from('fin_entries')
     .select('*,fin_categories(name_ar,name_en),fin_partners(name_ar,name_en),fin_accounts!fin_entries_account_id_fkey(name_ar,name_en)')
-    .gte('entry_date',S.ym+'-01').lte('entry_date',S.ym+'-31')
+    .gte('entry_date',S.ym+'-01').lte('entry_date',monthEnd(S.ym))
     .order('entry_date',{ascending:false}).order('created_at',{ascending:false});
   if(S.filter!=='all')q=q.eq('kind',S.filter);
   let{data:rows}=await q;
@@ -965,7 +965,7 @@ async function vHealth(){
 
 /* ══════════ المصاريف الثابتة ══════════ */
 async function vFixed(){
-  const monthStart=S.ym+'-01', monthEnd=S.ym+'-31';
+  const monthStart=S.ym+'-01', monthEnd=monthEnd(S.ym);
   const[{data:rows,error:e1},{data:pays,error:e2}]=await Promise.all([
     sb.from('fin_recurring_expenses').select('*').eq('is_active',true).eq('frequency','monthly').order('due_day'),
     sb.from('fin_recurring_payments').select('*').gte('pay_date',monthStart).lte('pay_date',monthEnd)
@@ -1125,7 +1125,7 @@ async function supDetail(s,tot){
 
 /* ══════════ الرواتب ══════════ */
 async function vEmployees(){
-  const monthStart=S.ym+'-01',monthEnd=S.ym+'-31';
+  const monthStart=S.ym+'-01',monthEnd=monthEnd(S.ym);
   const{data:paid,error:paidErr}=await sb.from('fin_entries').select('employee_id,amount_fils')
     .eq('kind','expense').not('employee_id','is',null)
     .gte('entry_date',monthStart).lte('entry_date',monthEnd);
