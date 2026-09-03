@@ -266,7 +266,7 @@ ar:{
  fixed:'المصاريف الثابتة', newFixed:'مصروف ثابت جديد', fixedName:'اسم المصروف',
  dueDay:'يوم الاستحقاق', monthlyCommitments:'التزامات الشهر', paidThisMonth:'المدفوع هذا الشهر',
  remainingThisMonth:'المتبقي هذا الشهر', payNow:'دفع الآن', partial:'دفع جزئي',
- unpaid:'غير مدفوع', fullyPaid:'مدفوع بالكامل', fixedExpense:'مصروف ثابت',
+ unpaid:'غير مدفوع', fullyPaid:'مدفوع بالكامل', fixedExpense:'مصروف ثابت', supplierEdit:'تعديل المورد', deleteSupplier:'حذف المورد', salaryDueDay:'يوم استحقاق الراتب',
  availableAfterCommitments:'المتاح بعد الالتزامات', salaryRemaining:'المتبقي من الراتب',
  errLogin:'بيانات الدخول غير صحيحة', noAccess:'هذا النظام للمديرات فقط',
  from:'من', to:'إلى', total:'الإجمالي', count:'العدد',
@@ -321,7 +321,7 @@ en:{
  fixed:'Fixed expenses', newFixed:'New fixed expense', fixedName:'Expense name',
  dueDay:'Due day', monthlyCommitments:'Monthly commitments', paidThisMonth:'Paid this month',
  remainingThisMonth:'Remaining this month', payNow:'Pay now', partial:'Partial payment',
- unpaid:'Unpaid', fullyPaid:'Fully paid', fixedExpense:'Fixed expense',
+ unpaid:'Unpaid', fullyPaid:'Fully paid', fixedExpense:'Fixed expense', supplierEdit:'Edit supplier', deleteSupplier:'Delete supplier', salaryDueDay:'Salary due day',
  availableAfterCommitments:'Available after commitments', salaryRemaining:'Salary remaining',
  errLogin:'Wrong email or password', noAccess:'Owners only',
  from:'From', to:'To', total:'Total', count:'Count',
@@ -1068,8 +1068,9 @@ function payFixed(r,alreadyPaid){
 
 /* ══════════ الموردون ══════════ */
 async function vSuppliers(){
-  const{data:buys}=await sb.from('fin_entries').select('supplier_id,amount_fils')
+  const{data:buys,error:buyErr}=await sb.from('fin_entries').select('supplier_id,amount_fils')
     .eq('kind','expense').not('supplier_id','is',null);
+  if(buyErr){toast(buyErr.message,'err');return}
   const tot={};(buys||[]).forEach(b=>tot[b.supplier_id]=(tot[b.supplier_id]||0)+b.amount_fils);
   $('#view').innerHTML=`
     ${back(t('suppliers'),'more')}
@@ -1079,33 +1080,45 @@ async function vSuppliers(){
         <div class="meta">${esc(s.phone||'—')}${s.contact?' · '+esc(s.contact):''}</div></div>
       <div class="amt num out">${money(tot[s.id]||0)}</div></div>`).join('')}</div>`
      :`<div class="empty">${t('noSuppliers')}</div>`}`;
-  $('#sAdd').onclick=()=>{
-    const o=sheet(`<h3>${t('newSupplier')}</h3>
-      <div class="field"><label>${t('person')} *</label><input id="uN"></div>
-      <div class="field"><label>${t('phone')}</label><input id="uP" inputmode="tel"></div>
-      <div class="field"><label>${t('contact')}</label><input id="uC"></div>
-      <div class="field"><label>${t('note')}</label><textarea id="uT" rows="2"></textarea></div>
-      <div class="sheet-actions">
-        <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
-        <button class="btn" id="uOk">${t('save')}</button></div>`);
-    o.querySelector('#uOk').onclick=async()=>{
-      const n=o.querySelector('#uN').value.trim();
-      if(!n){toast(t('required'),'err');return}
-      const{error}=await sb.from('fin_suppliers').insert({name:n,
-        phone:o.querySelector('#uP').value.trim()||null,
-        contact:o.querySelector('#uC').value.trim()||null,
-        note:o.querySelector('#uT').value.trim()||null});
-      if(error){toast(error.message,'err');return}
-      closeSheet();toast(t('saved'),'ok');await loadRefs();render()};
-  };
+  $('#sAdd').onclick=()=>supplierForm();
   $$('.item[data-s]').forEach(el=>el.onclick=()=>supDetail(
     S.sups.find(x=>x.id===el.dataset.s),tot[el.dataset.s]||0));
 }
 
+function supplierForm(ex){
+  const o=sheet(`<h3>${ex?t('supplierEdit'):t('newSupplier')}</h3>
+    <div class="field"><label>${t('person')} *</label><input id="uN" value="${ex?esc(ex.name):''}"></div>
+    <div class="field"><label>${t('phone')}</label><input id="uP" inputmode="tel" value="${ex?esc(ex.phone||''):''}"></div>
+    <div class="field"><label>${t('contact')}</label><input id="uC" value="${ex?esc(ex.contact||''):''}"></div>
+    <div class="field"><label>${t('note')}</label><textarea id="uT" rows="2">${ex?esc(ex.note||''):''}</textarea></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+      <button class="btn" id="uOk">${t('save')}</button></div>
+    ${ex?`<button class="btn btn-danger btn-full" style="margin-top:9px" id="uDel">${t('deleteSupplier')}</button>`:''}`);
+  o.querySelector('#uOk').onclick=async()=>{
+    const n=o.querySelector('#uN').value.trim();
+    if(!n){toast(t('required'),'err');return}
+    const body={name:n,phone:o.querySelector('#uP').value.trim()||null,
+      contact:o.querySelector('#uC').value.trim()||null,note:o.querySelector('#uT').value.trim()||null};
+    const{error}=ex?await sb.from('fin_suppliers').update(body).eq('id',ex.id)
+                   :await sb.from('fin_suppliers').insert(body);
+    if(error){toast(error.message,'err');return}
+    closeSheet();toast(t('saved'),'ok');await loadRefs();render()};
+  if(ex&&o.querySelector('#uDel'))o.querySelector('#uDel').onclick=async()=>{
+    if(!confirm(t('delQ')))return;
+    const{error}=await sb.from('fin_suppliers').delete().eq('id',ex.id);
+    if(error){
+      toast(lang==='ar'?'لا يمكن حذف المورد إذا كانت له حركات مالية. عدّلي بياناته بدل الحذف.':'Supplier cannot be deleted while linked to transactions. Edit it instead.','err');
+      return;
+    }
+    closeSheet();toast(t('deleted'),'ok');await loadRefs();render()};
+}
+
 async function supDetail(s,tot){
-  const{data:rows}=await sb.from('fin_entries').select('*,fin_categories(name_ar,name_en)')
+  const{data:rows,error}=await sb.from('fin_entries').select('*,fin_categories(name_ar,name_en)')
     .eq('supplier_id',s.id).order('entry_date',{ascending:false}).limit(50);
-  sheet(`<h3>${esc(s.name)}</h3>
+  if(error){toast(error.message,'err');return}
+  const o=sheet(`<h3>${esc(s.name)}</h3>
     <div class="card" style="margin-bottom:14px">
       ${s.phone?`<div class="pay-row"><span class="lb">${t('phone')}</span>
         <a href="tel:${esc(s.phone)}"><b>${esc(s.phone)}</b></a></div>`:''}
@@ -1114,6 +1127,7 @@ async function supDetail(s,tot){
         <b class="num">${money(tot)}</b></div>
       ${s.note?`<div style="margin-top:10px;font-size:13px;color:var(--muted)">${esc(s.note)}</div>`:''}
     </div>
+    <button class="btn btn-full no-print" id="uEdit" style="margin-bottom:14px">${t('supplierEdit')}</button>
     <div style="font-weight:600;margin-bottom:9px">${t('purchases')}</div>
     ${(rows||[]).length?`<div class="list">${rows.map(e=>`
       <div class="item"><div><div class="nm">${e.entry_date}</div>
@@ -1122,6 +1136,7 @@ async function supDetail(s,tot){
      :`<div class="empty">${t('noMoves')}</div>`}
     <button class="btn-sm btn-ghost btn-full" style="margin-top:14px"
       onclick="closeSheet()">${t('close')}</button>`);
+  o.querySelector('#uEdit').onclick=()=>{closeSheet();supplierForm(s)};
 }
 
 /* ══════════ الرواتب ══════════ */
@@ -1150,7 +1165,7 @@ async function vEmployees(){
       const p=done[e.id]||0, rem=Math.max(0,(+e.salary_fils||0)-p), full=rem===0;
       return `<div class="item" data-e2="${e.id}">
         <div><div class="nm">${esc(e.name)}</div>
-          <div class="meta">${esc(e.position||'—')} · ${t('paidThisMonth')}: ${money(p)}</div></div>
+          <div class="meta">${esc(e.position||'—')} · ${t('salaryDueDay')}: ${e.salary_due_day||28} · ${t('paidThisMonth')}: ${money(p)}</div></div>
         <div style="text-align:end">
           <div class="amt num">${money(e.salary_fils)}</div>
           <div class="meta">${t('salaryRemaining')}: ${money(rem)}</div>
@@ -1230,6 +1245,8 @@ function empForm(ex){
     <div class="field"><label>${t('salary')} (${t('kwd')})</label>
       <input type="number" id="mS" step="1" inputmode="decimal"
         value="${ex?(ex.salary_fils/1000):''}"></div>
+    <div class="field"><label>${t('salaryDueDay')}</label>
+      <input type="number" id="mD" min="1" max="31" step="1" value="${ex?(ex.salary_due_day||28):28}"></div>
     <div class="sheet-actions">
       <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
       <button class="btn" id="mOk">${t('save')}</button></div>
@@ -1238,7 +1255,8 @@ function empForm(ex){
     const n=o.querySelector('#mN').value.trim();
     if(!n){toast(t('required'),'err');return}
     const body={name:n,position:o.querySelector('#mP').value.trim()||null,
-      salary_fils:Math.round((+o.querySelector('#mS').value||0)*1000)};
+      salary_fils:Math.round((+o.querySelector('#mS').value||0)*1000),
+      salary_due_day:Math.min(31,Math.max(1,+o.querySelector('#mD').value||28))};
     const{error}=ex?await sb.from('fin_employees').update(body).eq('id',ex.id)
                    :await sb.from('fin_employees').insert(body);
     if(error){toast(error.message,'err');return}
