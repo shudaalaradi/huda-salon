@@ -1178,6 +1178,7 @@ async function vFixed(){
   const total=(rows||[]).reduce((s,r)=>s+(+r.amount_fils||0),0);
   const paidTotal=(rows||[]).reduce((s,r)=>s+Math.min(+r.amount_fils||0,paid[r.id]||0),0);
   const rem=Math.max(0,total-paidTotal);
+
   $('#view').innerHTML=`
     ${back(t('fixed'),'more')}
     <div class="field no-print"><input type="month" id="ym" value="${S.ym}"></div>
@@ -1187,29 +1188,45 @@ async function vFixed(){
       <div class="stat"><div class="lbl">${t('remainingThisMonth')}</div><div class="val dn num">${money(rem)}</div></div>
     </div>
     <button class="btn btn-full no-print" style="margin-bottom:14px" id="fxAdd">+ ${t('newFixed')}</button>
+
     ${(rows||[]).length?`<div class="list">${rows.map(r=>{
       const p=paid[r.id]||0, rr=Math.max(0,(+r.amount_fils||0)-p), full=rr===0;
-      return `<div class="item" data-fx="${r.id}">
-        <div><div class="nm">${esc(r.name)}</div>
-          <div class="meta">${t('dueDay')}: ${r.due_day||1} · ${t('paidThisMonth')}: ${money(p)}</div></div>
-        <div style="text-align:end">
-          <div class="amt num">${money(r.amount_fils)}</div>
-          <div class="meta">${t('remaining')}: ${money(rr)}</div>
-          <button type="button" class="btn-sm ${full?'btn-ghost':'btn-2'} no-print" ${full?'disabled':`onclick="event.stopPropagation();payFixedById('${r.id}')"`}>${full?t('fullyPaid'):t('payNow')}</button>
-        </div></div>`}).join('')}</div>`:`<div class="empty">${t('noMoves')}</div>`}`;
+      return `<div class="card" style="margin-bottom:10px">
+        <div class="row-between" style="margin-bottom:10px">
+          <div>
+            <div class="nm" style="font-weight:700">${esc(r.name)}</div>
+            <div class="meta">${t('dueDay')}: ${r.due_day||1} · ${t('paidThisMonth')}: ${money(p)}</div>
+          </div>
+          <div style="text-align:end">
+            <div class="amt num">${money(r.amount_fils)}</div>
+            <div class="meta">${t('remaining')}: ${money(rr)}</div>
+          </div>
+        </div>
+        <div class="no-print" style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button type="button" class="btn btn-ghost" data-fxedit="${r.id}">${t('edit')}</button>
+          <button type="button" class="btn ${full?'btn-ghost':'btn-2'}" data-fxpay="${r.id}" ${full?'disabled':''}>
+            ${full?t('fullyPaid'):t('payNow')}
+          </button>
+        </div>
+      </div>`}).join('')}</div>`:`<div class="empty">${t('noMoves')}</div>`}`;
+
   $('#ym').onchange=e=>{S.ym=e.target.value;render()};
   $('#fxAdd').onclick=()=>fixedForm();
-  window._fixedRows=rows||[];
-  window._fixedPaid=paid;
-  $$('.item[data-fx]').forEach(el=>el.onclick=e=>{
-    if(e.target.closest('button'))return;
-    fixedForm((rows||[]).find(x=>x.id===el.dataset.fx));
+
+  $$('[data-fxedit]').forEach(btn=>{
+    btn.onclick=()=>{
+      const r=(rows||[]).find(x=>String(x.id)===String(btn.dataset.fxedit));
+      if(r)fixedForm(r);
+    };
   });
-}
-function payFixedById(id){
-  const r=(window._fixedRows||[]).find(x=>String(x.id)===String(id));
-  if(!r){toast(lang==='ar'?'تعذر فتح المصروف الثابت':'Could not open recurring expense','err');return}
-  payFixed(r,(window._fixedPaid||{})[r.id]||0);
+
+  $$('[data-fxpay]').forEach(btn=>{
+    btn.onclick=()=>{
+      const r=(rows||[]).find(x=>String(x.id)===String(btn.dataset.fxpay));
+      if(!r){toast(lang==='ar'?'تعذر فتح المصروف':'Could not open expense','err');return}
+      payFixed(r,paid[r.id]||0);
+    };
+  });
 }
 
 function fixedForm(ex){
