@@ -268,6 +268,14 @@ ar:{
  remainingThisMonth:'المتبقي هذا الشهر', payNow:'دفع الآن', partial:'دفع جزئي',
  unpaid:'غير مدفوع', fullyPaid:'مدفوع بالكامل', fixedExpense:'مصروف ثابت', supplierEdit:'تعديل المورد', deleteSupplier:'حذف المورد', salaryDueDay:'يوم استحقاق الراتب', adjustBalance:'تعديل الرصيد', currentBalance:'الرصيد الحالي', actualBalance:'الرصيد الفعلي الآن', balanceAdjusted:'تم تعديل الرصيد',
  availableAfterCommitments:'المتاح بعد الالتزامات', salaryRemaining:'المتبقي من الراتب',
+ cashier:'الكاشير', cashierToday:'كاش اليوم', cashierReview:'سجل الكاشير',
+ openingCash:'بداية اليوم', cashInToday:'دخل الكاش اليوم', cashOutToday:'المصروف من الكاش',
+ expectedCash:'الكاش المفروض', addCash:'إضافة كاش', spendCash:'صرف كاش',
+ closeDay:'إقفال اليوم', actualCash:'الكاش الفعلي الموجود', difference:'الفرق',
+ dayClosed:'تم إقفال اليوم', noCashAccount:'لا يوجد حساب كاش مفعّل',
+ cashierSaved:'تم تسجيل حركة الكاش', cashierOnly:'صلاحية كاشير',
+ purchaseCash:'مشتريات كاش', dailyLog:'سجل اليوم', enteredBy:'سجلت بواسطة',
+
  errLogin:'بيانات الدخول غير صحيحة', noAccess:'هذا النظام للمديرات فقط',
  from:'من', to:'إلى', total:'الإجمالي', count:'العدد',
 },
@@ -323,6 +331,14 @@ en:{
  remainingThisMonth:'Remaining this month', payNow:'Pay now', partial:'Partial payment',
  unpaid:'Unpaid', fullyPaid:'Fully paid', fixedExpense:'Fixed expense', supplierEdit:'Edit supplier', deleteSupplier:'Delete supplier', salaryDueDay:'Salary due day', adjustBalance:'Adjust balance', currentBalance:'Current balance', actualBalance:'Actual balance now', balanceAdjusted:'Balance updated',
  availableAfterCommitments:'Available after commitments', salaryRemaining:'Salary remaining',
+ cashier:'Cashier', cashierToday:'Today cash', cashierReview:'Cashier log',
+ openingCash:'Opening cash', cashInToday:'Cash in today', cashOutToday:'Cash out today',
+ expectedCash:'Expected cash', addCash:'Add cash', spendCash:'Cash expense',
+ closeDay:'Close day', actualCash:'Actual cash on hand', difference:'Difference',
+ dayClosed:'Day closed', noCashAccount:'No active cash account',
+ cashierSaved:'Cash entry saved', cashierOnly:'Cashier access',
+ purchaseCash:'Cash purchase', dailyLog:'Today log', enteredBy:'Entered by',
+
  errLogin:'Wrong email or password', noAccess:'Owners only',
  from:'From', to:'To', total:'Total', count:'Count',
 }};
@@ -366,7 +382,7 @@ function applyLang(){
   $('#lbPass').textContent=t('pass');  $('#btnLogin').textContent=t('login');
   $('#btnLang').textContent=lang==='ar'?'English':'عربي';
   $('#btnLang2').textContent=lang==='ar'?'EN':'ع';
-  $('#btnOut').textContent=t('logout'); $('#hRole').textContent=t('sys');
+  $('#btnOut').textContent=t('logout'); $('#hRole').textContent=S.me?.role==='cashier'?t('cashierOnly'):t('sys');
   if(S.me){buildNav();render()}
 }
 $('#btnLang').onclick=$('#btnLang2').onclick=()=>{
@@ -387,16 +403,27 @@ async function boot(){
   const{data:{user}}=await sb.auth.getUser();
   if(!user){$('#login').classList.remove('hidden');$('#app').classList.add('hidden');return}
   const{data:me}=await sb.from('profiles').select('*').eq('id',user.id).single();
-  if(!me||me.role!=='owner'){toast(t('noAccess'),'err');await sb.auth.signOut();
+  if(!me||!['owner','cashier'].includes(me.role)){toast(t('noAccess'),'err');await sb.auth.signOut();
     setTimeout(()=>location.reload(),1800);return}
   S.me=me;
+  if(me.role==='cashier')S.tab='cashier';
   $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
   $('#hName').textContent=lang==='ar'?me.full_name_ar:(me.full_name_en||me.full_name_ar);
-  await loadRefs(); await countAlerts();
+  $('#hRole').textContent=me.role==='cashier'?t('cashierOnly'):t('sys');
+  await loadRefs();
+  if(me.role==='owner')await countAlerts(); else S.alerts=0;
   buildNav(); render();
 }
 
 async function loadRefs(){
+  if(S.me?.role==='cashier'){
+    const{data,error}=await sb.rpc('fin_cashier_options');
+    if(error){toast(error.message,'err');return}
+    const x=data||{};
+    S.accs=[];S.parts=[];S.emps=[];
+    S.cats=x.categories||[];S.sups=x.suppliers||[];
+    return;
+  }
   const[a,c,p,s,e]=await Promise.all([
     sb.rpc('fin_balances'),
     sb.from('fin_categories').select('*').eq('is_active',true).order('sort_order'),
@@ -435,10 +462,15 @@ const IC={
  bill:'<path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/>',
 };
 function buildNav(){
+  if(S.me?.role==='cashier'){
+    $('#nav').innerHTML=`<button data-t="cashier" class="on">
+      <svg viewBox="0 0 24 24">${IC.acc}</svg>${t('cashier')}</button>`;
+    return;
+  }
   const tabs=[['home','nHome','home'],['moves','nMoves','mov'],['accounts','nAcc','acc'],
               ['debts','nDebt','debt',S.alerts],['more','nMore','more']];
   const grp={suppliers:'more',employees:'more',stock:'more',health:'more',fixed:'more',
-             reports:'more',partners:'more',cats:'more',statement:'accounts'};
+             reports:'more',partners:'more',cats:'more',cashierReview:'more',statement:'accounts'};
   const cur=grp[S.tab]||S.tab;
   $('#nav').innerHTML=tabs.map(([id,l,i,n])=>`
     <button data-t="${id}" class="${cur===id?'on':''}">
@@ -447,19 +479,148 @@ function buildNav(){
   $$('#nav button').forEach(b=>b.onclick=()=>{
     S.tab=b.dataset.t;buildNav();render();window.scrollTo(0,0)});
 }
-function go(x){S.tab=x;buildNav();render();window.scrollTo(0,0)}
+function go(x){if(S.me?.role==='cashier'&&x!=='cashier')x='cashier';S.tab=x;buildNav();render();window.scrollTo(0,0)}
 function back(title,to){return `<div class="row-between">
   <div class="page-title" style="margin:0">${title}</div>
   <button class="btn-sm btn-ghost no-print" onclick="go('${to}')">${lang==='ar'?'رجوع ›':'‹ Back'}</button></div>`}
 
 function render(){
   $('#view').innerHTML='<div class="spin"></div>';
-  ({home:vHome,moves:vMoves,accounts:vAccounts,debts:vDebts,more:vMore,
+  const views={home:vHome,moves:vMoves,accounts:vAccounts,debts:vDebts,more:vMore,
     suppliers:vSuppliers,employees:vEmployees,stock:vStock,health:vHealth,fixed:vFixed,
-    reports:vReports,partners:vPartners,cats:vCats,statement:vStatement}[S.tab]||vHome)();
+    reports:vReports,partners:vPartners,cats:vCats,statement:vStatement,
+    cashier:vCashier,cashierReview:vCashierReview};
+  (views[S.tab]||(S.me?.role==='cashier'?vCashier:vHome))();
 }
 </script>
 <script>
+
+/* ══════════ الكاشير ══════════ */
+async function vCashier(){
+  const d=today();
+  const{data,error}=await sb.rpc('fin_cashier_dashboard',{p_day:d});
+  if(error){$('#view').innerHTML=`<div class="alert red">${esc(error.message)}</div>`;return}
+  const x=data||{};
+  if(!x.cash_account_id){
+    $('#view').innerHTML=`<div class="page-title">${t('cashier')}</div><div class="alert red">${t('noCashAccount')}</div>`;
+    return;
+  }
+  const closed=!!x.closing;
+  const diff=closed?(+x.closing.difference_fils||0):0;
+  $('#view').innerHTML=`
+    <div class="row-between"><div><div class="page-title" style="margin:0">${t('cashier')}</div>
+      <div class="meta">${d}</div></div><span class="chip ${closed?'ok':'warn'}">${closed?t('dayClosed'):t('cashierToday')}</span></div>
+    <div class="big"><div class="lbl">${t('expectedCash')}</div>
+      <div class="val num">${money(+x.expected_fils||0)}</div><div class="sub">${t('kwd')}</div></div>
+    <div class="stats">
+      <div class="stat"><div class="lbl">${t('openingCash')}</div><div class="val num">${money(+x.opening_fils||0)}</div></div>
+      <div class="stat"><div class="lbl">${t('cashInToday')}</div><div class="val up num">${money(+x.in_fils||0)}</div></div>
+      <div class="stat"><div class="lbl">${t('cashOutToday')}</div><div class="val dn num">${money(+x.out_fils||0)}</div></div>
+    </div>
+    ${closed?`<div class="card" style="margin-bottom:14px">
+      <div class="pay-row"><span class="lb">${t('actualCash')}</span><b class="num">${money(+x.closing.actual_fils||0)}</b></div>
+      <div class="pay-row"><span class="lb">${t('difference')}</span>
+        <b class="num ${diff===0?'':(diff>0?'amt in':'amt out')}">${money(diff)}</b></div>
+      ${x.closing.note?`<div style="padding-top:10px;color:var(--muted);font-size:13px">${esc(x.closing.note)}</div>`:''}
+    </div>`:''}
+    <div class="kinds no-print" style="margin-bottom:18px">
+      <button class="kind-btn" id="cashIn"><span class="ic">＋</span>${t('addCash')}</button>
+      <button class="kind-btn" id="cashOut"><span class="ic">－</span>${t('spendCash')}</button>
+    </div>
+    <button class="btn btn-2 btn-full no-print" id="cashClose" style="margin-bottom:18px">${t('closeDay')}</button>
+    <div class="page-title">${t('dailyLog')}</div>
+    ${(x.entries||[]).length?`<div class="list">${x.entries.map(e=>`
+      <div class="item"><div><div class="nm">${esc(e.category_name||t(e.kind))}</div>
+        <div class="meta">${esc(e.supplier_name||'')}${e.note?' · '+esc(e.note):''}${e.created_time?' · '+esc(e.created_time):''}</div></div>
+        <b class="num amt ${e.kind==='income'?'in':'out'}">${e.kind==='income'?'+':'−'} ${money(+e.amount_fils||0)}</b>
+      </div>`).join('')}</div>`:`<div class="empty">${t('noMoves')}</div>`}`;
+  $('#cashIn').onclick=()=>cashierEntryForm('income');
+  $('#cashOut').onclick=()=>cashierEntryForm('expense');
+  $('#cashClose').onclick=()=>cashierCloseForm(x);
+}
+
+function cashierEntryForm(kind){
+  const cats=S.cats.filter(c=>c.kind===kind);
+  const o=sheet(`<h3>${kind==='income'?t('addCash'):t('spendCash')}</h3>
+    <div class="field"><label>${t('amount')} (${t('kwd')}) *</label>
+      <input type="number" id="cA" step="0.001" min="0" inputmode="decimal"></div>
+    <div class="field"><label>${t('category')} *</label>
+      <select id="cC"><option value="">${t('pick')}</option>
+        ${cats.map(c=>`<option value="${c.id}">${esc(nm(c))}</option>`).join('')}</select></div>
+    ${kind==='expense'?`<div class="field"><label>${t('supplier')}</label>
+      <select id="cS"><option value="">—</option>
+        ${S.sups.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></div>`:''}
+    <div class="field"><label>${t('note')}</label><textarea id="cN" rows="2"></textarea></div>
+    <div class="sheet-actions"><button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+      <button class="btn" id="cOk">${t('save')}</button></div>`);
+  o.querySelector('#cOk').onclick=async()=>{
+    const amt=Math.round((+o.querySelector('#cA').value||0)*1000);
+    const cat=o.querySelector('#cC').value;
+    if(!amt||!cat){toast(t('required'),'err');return}
+    const b=o.querySelector('#cOk');b.disabled=true;
+    const{error}=await sb.rpc('fin_cashier_add_entry',{
+      p_kind:kind,p_amount_fils:amt,p_entry_date:today(),p_category_id:cat,
+      p_supplier_id:o.querySelector('#cS')?.value||null,p_note:o.querySelector('#cN').value.trim()||null
+    });
+    if(error){b.disabled=false;toast(error.message,'err');return}
+    closeSheet();toast(t('cashierSaved'),'ok');render();
+  };
+}
+
+function cashierCloseForm(x){
+  const o=sheet(`<h3>${t('closeDay')}</h3>
+    <div class="card" style="margin-bottom:14px"><div class="pay-row">
+      <span class="lb">${t('expectedCash')}</span><b class="num">${money(+x.expected_fils||0)}</b></div></div>
+    <div class="field"><label>${t('actualCash')} (${t('kwd')}) *</label>
+      <input type="number" id="ccA" step="0.001" inputmode="decimal"
+        value="${x.closing?(+x.closing.actual_fils/1000).toFixed(3):(+x.expected_fils/1000).toFixed(3)}"></div>
+    <div class="field"><label>${t('note')}</label><textarea id="ccN" rows="2">${x.closing?esc(x.closing.note||''):''}</textarea></div>
+    <div class="sheet-actions"><button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+      <button class="btn" id="ccOk">${t('save')}</button></div>`);
+  o.querySelector('#ccOk').onclick=async()=>{
+    const actual=Math.round((+o.querySelector('#ccA').value||0)*1000);
+    const{error}=await sb.rpc('fin_cashier_close_day',{p_day:today(),p_actual_fils:actual,p_note:o.querySelector('#ccN').value.trim()||null});
+    if(error){toast(error.message,'err');return}
+    closeSheet();toast(t('dayClosed'),'ok');render();
+  };
+}
+
+async function vCashierReview(){
+  const d=today();
+  const{data,error}=await sb.rpc('fin_cashier_review',{p_day:d});
+  if(error){toast(error.message,'err');return}
+  const x=data||{};
+  $('#view').innerHTML=`
+    ${back(t('cashierReview'),'more')}
+    <div class="field no-print"><input type="date" id="crD" value="${d}"></div>
+    <div id="crBody">${cashierReviewHtml(x)}</div>`;
+  $('#crD').onchange=async e=>{
+    const{data,error}=await sb.rpc('fin_cashier_review',{p_day:e.target.value});
+    if(error){toast(error.message,'err');return}
+    $('#crBody').innerHTML=cashierReviewHtml(data||{});
+  };
+}
+function cashierReviewHtml(x){
+  const c=x.closing||null, diff=c?(+c.difference_fils||0):0;
+  return `<div class="stats">
+    <div class="stat"><div class="lbl">${t('openingCash')}</div><div class="val num">${money(+x.opening_fils||0)}</div></div>
+    <div class="stat"><div class="lbl">${t('cashInToday')}</div><div class="val up num">${money(+x.in_fils||0)}</div></div>
+    <div class="stat"><div class="lbl">${t('cashOutToday')}</div><div class="val dn num">${money(+x.out_fils||0)}</div></div>
+    <div class="stat"><div class="lbl">${t('expectedCash')}</div><div class="val num">${money(+x.expected_fils||0)}</div></div>
+  </div>
+  ${c?`<div class="card" style="margin-bottom:14px">
+    <div class="pay-row"><span class="lb">${t('actualCash')}</span><b class="num">${money(+c.actual_fils||0)}</b></div>
+    <div class="pay-row"><span class="lb">${t('difference')}</span><b class="num">${money(diff)}</b></div>
+    <div class="pay-row"><span class="lb">${t('enteredBy')}</span><b>${esc(c.created_by_name||'')}</b></div>
+    ${c.note?`<div style="padding-top:10px;color:var(--muted);font-size:13px">${esc(c.note)}</div>`:''}
+  </div>`:`<div class="alert">${t('unpaid')}: ${t('closeDay')}</div>`}
+  ${(x.entries||[]).length?`<div class="list">${x.entries.map(e=>`
+    <div class="item"><div><div class="nm">${esc(e.category_name||t(e.kind))}</div>
+      <div class="meta">${esc(e.created_by_name||'')}${e.supplier_name?' · '+esc(e.supplier_name):''}${e.note?' · '+esc(e.note):''}</div></div>
+      <b class="num amt ${e.kind==='income'?'in':'out'}">${e.kind==='income'?'+':'−'} ${money(+e.amount_fils||0)}</b></div>`).join('')}</div>`:
+    `<div class="empty">${t('noMoves')}</div>`}`;
+}
+
 /* ══════════ الرئيسية ══════════ */
 async function vHome(){
   const monthStart=S.ym+'-01', monthLast=lastDayOfMonth(S.ym);
@@ -776,11 +937,12 @@ function balanceForm(a){
       <button class="btn" id="bOk">${t('save')}</button></div>`);
   o.querySelector('#bOk').onclick=async()=>{
     const target=Math.round((+o.querySelector('#bNow').value||0)*1000);
-    const current=+a.balance_fils||0;
-    const delta=target-current;
-    const newOpening=(+a.opening_fils||0)+delta;
     const b=o.querySelector('#bOk');b.disabled=true;
-    const{error}=await sb.from('fin_accounts').update({opening_fils:newOpening}).eq('id',a.account_id);
+    const{error}=await sb.rpc('fin_set_account_balance',{
+      p_account_id:a.account_id,
+      p_target_fils:target,
+      p_note:o.querySelector('#bNote').value.trim()||null
+    });
     if(error){b.disabled=false;toast(error.message,'err');return}
     closeSheet();toast(t('balanceAdjusted'),'ok');await loadRefs();render();
   };
@@ -957,7 +1119,7 @@ function vMore(){
   $('#view').innerHTML=`<div class="page-title">${t('nMore')}</div>
     <div class="menu-grid">
       ${c('health','health','heart')}${c('reports','reports','rep')}
-      ${c('fixed','fixed','bill')}${c('suppliers','suppliers','sup')}${c('employees','employees','emp')}
+      ${c('cashierReview','cashierReview','acc')}${c('fixed','fixed','bill')}${c('suppliers','suppliers','sup')}${c('employees','employees','emp')}
       ${c('stock','stock','box')}${c('partners','partners','part')}
       ${c('cats','categories','tag')}
     </div>`;
