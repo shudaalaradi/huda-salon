@@ -708,6 +708,10 @@ async function vHome(){
 }
 
 function kindLabel(e){
+  if((e.kind==='withdrawal'||e.kind==='capital') && (e.note||'').startsWith('سداد دين — '))
+    return lang==='ar'?'سداد دين':'Debt payment';
+  if((e.kind==='withdrawal'||e.kind==='capital') && (e.note||'').startsWith('تحصيل دين — '))
+    return lang==='ar'?'تحصيل دين':'Debt collection';
   if(e.kind==='income'||e.kind==='expense')
     return e.fin_categories?nm(e.fin_categories):t(e.kind);
   if(e.kind==='transfer') return t('transfer');
