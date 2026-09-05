@@ -938,7 +938,7 @@ function balanceForm(a){
   o.querySelector('#bOk').onclick=async()=>{
     const target=Math.round((+o.querySelector('#bNow').value||0)*1000);
     const b=o.querySelector('#bOk');b.disabled=true;
-    const{error}=await sb.rpc('fin_set_account_balance',{
+    const{error}=await sb.rpc('fin_reconcile_account_balance',{
       p_account_id:a.account_id,
       p_target_fils:target,
       p_note:o.querySelector('#bNote').value.trim()||null
