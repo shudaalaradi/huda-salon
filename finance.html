@@ -266,7 +266,7 @@ ar:{
  fixed:'المصاريف الثابتة', newFixed:'مصروف ثابت جديد', fixedName:'اسم المصروف',
  dueDay:'يوم الاستحقاق', monthlyCommitments:'التزامات الشهر', paidThisMonth:'المدفوع هذا الشهر',
  remainingThisMonth:'المتبقي هذا الشهر', payNow:'دفع الآن', partial:'دفع جزئي',
- unpaid:'غير مدفوع', fullyPaid:'مدفوع بالكامل', fixedExpense:'مصروف ثابت', supplierEdit:'تعديل المورد', deleteSupplier:'حذف المورد', salaryDueDay:'يوم استحقاق الراتب',
+ unpaid:'غير مدفوع', fullyPaid:'مدفوع بالكامل', fixedExpense:'مصروف ثابت', supplierEdit:'تعديل المورد', deleteSupplier:'حذف المورد', salaryDueDay:'يوم استحقاق الراتب', adjustBalance:'تعديل الرصيد', currentBalance:'الرصيد الحالي', actualBalance:'الرصيد الفعلي الآن', balanceAdjusted:'تم تعديل الرصيد',
  availableAfterCommitments:'المتاح بعد الالتزامات', salaryRemaining:'المتبقي من الراتب',
  errLogin:'بيانات الدخول غير صحيحة', noAccess:'هذا النظام للمديرات فقط',
  from:'من', to:'إلى', total:'الإجمالي', count:'العدد',
@@ -321,7 +321,7 @@ en:{
  fixed:'Fixed expenses', newFixed:'New fixed expense', fixedName:'Expense name',
  dueDay:'Due day', monthlyCommitments:'Monthly commitments', paidThisMonth:'Paid this month',
  remainingThisMonth:'Remaining this month', payNow:'Pay now', partial:'Partial payment',
- unpaid:'Unpaid', fullyPaid:'Fully paid', fixedExpense:'Fixed expense', supplierEdit:'Edit supplier', deleteSupplier:'Delete supplier', salaryDueDay:'Salary due day',
+ unpaid:'Unpaid', fullyPaid:'Fully paid', fixedExpense:'Fixed expense', supplierEdit:'Edit supplier', deleteSupplier:'Delete supplier', salaryDueDay:'Salary due day', adjustBalance:'Adjust balance', currentBalance:'Current balance', actualBalance:'Actual balance now', balanceAdjusted:'Balance updated',
  availableAfterCommitments:'Available after commitments', salaryRemaining:'Salary remaining',
  errLogin:'Wrong email or password', noAccess:'Owners only',
  from:'From', to:'To', total:'Total', count:'Count',
@@ -740,10 +740,50 @@ async function vAccounts(){
             ${a.kind==='bank'?(esc(a.bank_name||t('bank'))+(a.last4?' ••'+esc(a.last4):'')):t('cash')}</div>
         </div><span class="chip ${a.balance_fils<0?'bad':'ok'}">${a.kind==='bank'?t('bank'):t('cash')}</span></div>
         <div class="bal num">${money(a.balance_fils)}</div>
+        <div class="no-print" style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn-sm btn-ghost" style="flex:1" data-edit-a="${a.account_id}">${t('edit')}</button>
+          <button class="btn-sm" style="flex:1" data-bal-a="${a.account_id}">${t('adjustBalance')}</button>
+        </div>
       </div>`).join('')}`;
   $('#aAdd').onclick=()=>accForm();
-  $$('.acct[data-a]').forEach(el=>el.onclick=()=>{
+  $$('.acct[data-a]').forEach(el=>el.onclick=e=>{
+    if(e.target.closest('button'))return;
     S.acc=el.dataset.a;S.tab='statement';buildNav();render()});
+  $$('[data-edit-a]').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    accForm(S.accs.find(a=>String(a.account_id)===String(b.dataset.editA)));
+  });
+  $$('[data-bal-a]').forEach(b=>b.onclick=e=>{
+    e.stopPropagation();
+    balanceForm(S.accs.find(a=>String(a.account_id)===String(b.dataset.balA)));
+  });
+}
+
+function balanceForm(a){
+  if(!a)return;
+  const o=sheet(`<h3>${t('adjustBalance')} — ${esc(nm(a))}</h3>
+    <div class="card" style="margin-bottom:14px">
+      <div class="pay-row"><span class="lb">${t('currentBalance')}</span>
+        <b class="num">${money(a.balance_fils)}</b></div>
+    </div>
+    <div class="field"><label>${t('actualBalance')} (${t('kwd')})</label>
+      <input type="number" id="bNow" step="0.001" inputmode="decimal"
+        value="${(+a.balance_fils/1000).toFixed(3)}"></div>
+    <div class="field"><label>${t('note')}</label>
+      <textarea id="bNote" rows="2" placeholder="${lang==='ar'?'مثال: مطابقة رصيد البنك':'Example: bank reconciliation'}"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeSheet()">${t('cancel')}</button>
+      <button class="btn" id="bOk">${t('save')}</button></div>`);
+  o.querySelector('#bOk').onclick=async()=>{
+    const target=Math.round((+o.querySelector('#bNow').value||0)*1000);
+    const current=+a.balance_fils||0;
+    const delta=target-current;
+    const newOpening=(+a.opening_fils||0)+delta;
+    const b=o.querySelector('#bOk');b.disabled=true;
+    const{error}=await sb.from('fin_accounts').update({opening_fils:newOpening}).eq('id',a.account_id);
+    if(error){b.disabled=false;toast(error.message,'err');return}
+    closeSheet();toast(t('balanceAdjusted'),'ok');await loadRefs();render();
+  };
 }
 
 function accForm(ex){
