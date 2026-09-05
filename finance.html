@@ -624,7 +624,7 @@ function cashierReviewHtml(x){
 /* ══════════ الرئيسية ══════════ */
 async function vHome(){
   const monthStart=S.ym+'-01', monthLast=lastDayOfMonth(S.ym);
-  const[{data:sum},{data:last},{data:fixed},{data:fixedPaid},{data:salaryPaid}]=await Promise.all([
+  const[{data:sum},{data:last},{data:fixed},{data:fixedPaid},{data:salaryPaid},{data:payableDebts}]=await Promise.all([
     sb.rpc('fin_summary',{p_ym:S.ym}),
     sb.from('fin_entries').select('*,fin_categories(name_ar,name_en),fin_partners(name_ar,name_en),fin_accounts!fin_entries_account_id_fkey(name_ar,name_en)')
       .order('entry_date',{ascending:false}).order('created_at',{ascending:false}).limit(8),
@@ -632,6 +632,8 @@ async function vHome(){
     sb.from('fin_recurring_payments').select('recurring_id,amount_fils').gte('pay_date',monthStart).lte('pay_date',monthLast),
     sb.from('fin_entries').select('employee_id,amount_fils').eq('kind','expense').not('employee_id','is',null)
       .gte('entry_date',monthStart).lte('entry_date',monthLast),
+    sb.from('fin_debts').select('id,person,amount_fils,paid_fils,due_date,is_settled')
+      .eq('direction','payable').eq('is_settled',false).order('due_date',{nullsFirst:false}),
   ]);
   const s=(sum||[])[0]||{};
   const pf=+(s.profit_fils||0);
@@ -645,6 +647,8 @@ async function vHome(){
   const commitmentPaid=Math.min(fixedDone,fixedDue)+Math.min(salaryPaidTotal,salaryDue);
   const commitmentRem=Math.max(0,commitmentDue-commitmentPaid);
   const afterCommit=(+s.total_fils||0)-commitmentRem;
+  const debtRows=payableDebts||[];
+  const debtTotal=debtRows.reduce((z,d)=>z+Math.max(0,(+d.amount_fils||0)-(+d.paid_fils||0)),0);
 
   $('#view').innerHTML=`
     <div class="field no-print"><input type="month" id="ym" value="${S.ym}"></div>
@@ -671,6 +675,18 @@ async function vHome(){
         <div class="stat"><div class="lbl">${t('remainingThisMonth')}</div><div class="val dn num">${money(commitmentRem)}</div></div>
       </div>
     </div>
+    <div class="card" style="margin-bottom:14px;cursor:pointer" onclick="go('debts')">
+      <div class="row-between">
+        <b>${lang==='ar'?'ديون علينا':'Debts we owe'}</b>
+        <span>${money(debtTotal)} ${t('kwd')} ›</span>
+      </div>
+      <div class="meta" style="margin-top:4px">${lang==='ar'?'تظهر للمتابعة فقط ولا تدخل في حسبة التزامات الشهر':'Shown for tracking only; excluded from monthly commitments calculation'}</div>
+      ${debtRows.length?`<div style="margin-top:10px">${debtRows.slice(0,5).map(d=>`
+        <div class="pay-row"><span>${esc(d.person)}</span><b class="num">${money(Math.max(0,(+d.amount_fils||0)-(+d.paid_fils||0)))}</b></div>`).join('')}
+        ${debtRows.length>5?`<div class="meta" style="margin-top:6px">${lang==='ar'?`+ ${debtRows.length-5} ديون أخرى`:`+ ${debtRows.length-5} more debts`}</div>`:''}
+      </div>`:''}
+    </div>
+
     <div class="big ${afterCommit<0?'neg':''}" style="background:${afterCommit<0?'#3A2422':'#24342B'}">
       <div class="lbl">${t('availableAfterCommitments')}</div>
       <div class="val num">${money(afterCommit)}</div>
