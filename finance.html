@@ -1195,19 +1195,21 @@ async function vFixed(){
         <div style="text-align:end">
           <div class="amt num">${money(r.amount_fils)}</div>
           <div class="meta">${t('remaining')}: ${money(rr)}</div>
-          <button class="btn-sm ${full?'btn-ghost':'btn-2'} no-print" data-fxpay="${r.id}" ${full?'disabled':''}>${full?t('fullyPaid'):t('payNow')}</button>
+          <button type="button" class="btn-sm ${full?'btn-ghost':'btn-2'} no-print" ${full?'disabled':`onclick="event.stopPropagation();payFixedById('${r.id}')"`}>${full?t('fullyPaid'):t('payNow')}</button>
         </div></div>`}).join('')}</div>`:`<div class="empty">${t('noMoves')}</div>`}`;
   $('#ym').onchange=e=>{S.ym=e.target.value;render()};
   $('#fxAdd').onclick=()=>fixedForm();
+  window._fixedRows=rows||[];
+  window._fixedPaid=paid;
   $$('.item[data-fx]').forEach(el=>el.onclick=e=>{
-    if(e.target.closest('[data-fxpay]'))return;
+    if(e.target.closest('button'))return;
     fixedForm((rows||[]).find(x=>x.id===el.dataset.fx));
   });
-  $$('[data-fxpay]').forEach(btn=>btn.onclick=e=>{
-    e.stopPropagation();
-    const r=(rows||[]).find(x=>x.id===btn.dataset.fx);
-    payFixed(r,paid[r.id]||0);
-  });
+}
+function payFixedById(id){
+  const r=(window._fixedRows||[]).find(x=>String(x.id)===String(id));
+  if(!r){toast(lang==='ar'?'تعذر فتح المصروف الثابت':'Could not open recurring expense','err');return}
+  payFixed(r,(window._fixedPaid||{})[r.id]||0);
 }
 
 function fixedForm(ex){
